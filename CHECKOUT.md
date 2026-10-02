@@ -107,8 +107,8 @@ token.
    # set NOTION_TOKEN=... and leave everything else blank
    ```
 3. ```bash
-   bun run notion:setup    # creates a "Kinetex LiveOps" page + 8 databases
-   bun run notion:seed     # creates the demo event (26 pages)
+   bun run notion:all      # setup (page + 8 databases) → present (icon,
+                           # cover, template content) → seed (26 pages)
    bun run notion:doctor   # audit access and record counts
    ```
 4. Restart `bun run dev` and repeat section 2.2. This time the write-back lands

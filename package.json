@@ -1,6 +1,6 @@
 {
   "name": "kinetex-liveops",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": false,
   "description": "Change-aware event command center: turn event records into a dependency-aware operational workflow.",
   "scripts": {
@@ -11,9 +11,11 @@
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "notion:setup": "bun run scripts/notion-setup.ts",
+    "notion:present": "bun run scripts/notion-present.ts",
     "notion:seed": "bun run scripts/notion-seed.ts",
     "notion:reset": "bun run scripts/notion-reset.ts",
-    "notion:doctor": "bun run scripts/notion-doctor.ts"
+    "notion:doctor": "bun run scripts/notion-doctor.ts",
+    "notion:all": "bun run notion:setup && bun run notion:present && bun run notion:seed"
   },
   "dependencies": {
     "@notionhq/client": "^2.2.15",

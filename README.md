@@ -1,4 +1,4 @@
-# Kinetex LiveOps
+# Kinetex LiveOps  ·  v1.0.0
 
 **Change-aware event command center.** One line: Kinetex LiveOps turns event records into a dependency-aware command center, so when a plan changes it shows the operational impact, proposes role-owned follow-ups, and records approved decisions back into the source of truth.
 
@@ -69,10 +69,13 @@ data.
 
 ```bash
 cp .env.example .env.local   # set NOTION_TOKEN only
-bun run notion:setup         # creates the project page + 8 databases
-bun run notion:seed          # populates the demo event
+bun run notion:all           # setup + present + seed, in one command
 bun run notion:doctor        # audit: access, record counts, Domain IDs
 ```
+
+Or run them individually: `notion:setup` (project page + 8 databases),
+`notion:present` (page icon, cover, and template content), `notion:seed` (demo
+data), `notion:reset` (archive and start over).
 
 Full guide: [docs/notion-setup.md](docs/notion-setup.md).
 
@@ -107,6 +110,8 @@ tests/               Engine, Notion mapping, and report unit tests
 ## Documentation
 
 - [**CHECKOUT.md**](CHECKOUT.md) — **how to run, tour, and verify everything**
+- [CHANGELOG.md](CHANGELOG.md) — release notes (v1.0.0)
+- [docs/design-system.md](docs/design-system.md) — palette, type, and layout rules
 - [docs/implementation-plan.md](docs/implementation-plan.md) — phased build plan
 - [docs/notion-setup.md](docs/notion-setup.md) — connect a real workspace in four steps
 - [docs/PRD.md](docs/PRD.md) — problem, users, requirements, acceptance criteria

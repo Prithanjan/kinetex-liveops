@@ -12,7 +12,18 @@ import type {
 } from "@/lib/domain/types";
 import { CHANGE_TYPE_LABELS, CHANGE_TYPES, ROLES } from "@/lib/domain/types";
 import { roleLabel } from "@/lib/format";
-import { Card, Chip, Empty, SectionTitle, severityTone, titleCase } from "@/components/ui";
+import {
+  Card,
+  Callout,
+  Chip,
+  Empty,
+  SectionTitle,
+  Steps,
+  severityIcon,
+  severityTone,
+  titleCase,
+} from "@/components/ui";
+import { IconRoute, IconSparkle, IconCheck } from "@/components/icons";
 
 const IST = "Asia/Kolkata";
 
@@ -179,8 +190,16 @@ export default function ChangeConsole({
 
   return (
     <div className="grid gap-6 lg:grid-cols-[22rem_1fr]">
-      <Card className="self-start lg:sticky lg:top-24">
-        <SectionTitle meta={sourceKind}>Request</SectionTitle>
+      <Card className="self-start p-6 lg:sticky lg:top-28">
+        <SectionTitle icon={<IconRoute className="h-5 w-5" />} meta={sourceKind}>
+          Request
+        </SectionTitle>
+        <div className="mt-4">
+          <Steps
+            current={entry ? 2 : report ? 1 : 0}
+            items={["Request", "Preview", "Approve"]}
+          />
+        </div>
 
         <div className="mt-5">
           <span className={labelClass}>Change type</span>
@@ -412,27 +431,28 @@ export default function ChangeConsole({
 
       <div className="space-y-6">
         {error && (
-          <div className="rounded-card border border-danger/25 bg-danger-soft p-4 text-sm text-danger">
+          <Callout title="That change could not be processed" tone="clay">
             {error}
-          </div>
+          </Callout>
         )}
 
         {entry && (
-          <div className="rounded-card border border-success/25 bg-success-soft p-5">
-            <div className="font-display text-title text-success">
-              {entry.id} approved and written back
-            </div>
-            <p className="mt-1.5 text-sm text-ink-soft">
-              {entry.affectedRecordIds.length} records referenced ·{" "}
-              {entry.followUpTaskIds.length} follow-up tasks created. See them on the
-              dashboard and in the role briefings.
-            </p>
-          </div>
+          <Callout
+            title={`${entry.id} approved and written back`}
+            tone="moss"
+            icon={<IconCheck className="h-4 w-4" />}
+          >
+            {entry.affectedRecordIds.length} records referenced ·{" "}
+            {entry.followUpTaskIds.length} follow-up tasks created. See them on the
+            dashboard and in the role briefings.
+          </Callout>
         )}
 
         {!report && !error && (
-          <Card>
-            <SectionTitle>Impact preview</SectionTitle>
+          <Card className="p-6">
+            <SectionTitle icon={<IconSparkle className="h-5 w-5" />}>
+              Impact preview
+            </SectionTitle>
             <div className="mt-5">
               <Empty>
                 Pick a change on the left, then preview. Nothing is written until you
@@ -444,15 +464,17 @@ export default function ChangeConsole({
 
         {report && (
           <>
-            <Card>
+            <Card className="p-6">
               <div className="flex flex-wrap items-center gap-2">
-                <Chip tone="accent">generated</Chip>
+                <Chip tone="accent" icon={<IconSparkle className="h-3.5 w-3.5" />}>
+                  generated
+                </Chip>
                 <span className="text-xs text-faint">{report.summary.generator}</span>
                 <span className="text-xs text-faint">
                   · {report.summary.sourceRecordIds.length} source records linked
                 </span>
               </div>
-              <p className="mt-4 font-display text-title text-ink">
+              <p className="mt-4 font-display text-hero text-ink">
                 {report.changeLabel}
               </p>
               <p className="mt-3 text-sm leading-relaxed text-muted">
@@ -460,7 +482,7 @@ export default function ChangeConsole({
               </p>
             </Card>
 
-            <Card>
+            <Card className="p-6">
               <SectionTitle meta={`${report.affected.length} records`}>
                 Blast radius
               </SectionTitle>
@@ -479,7 +501,7 @@ export default function ChangeConsole({
               </ul>
             </Card>
 
-            <Card>
+            <Card className="p-6">
               <SectionTitle meta={`${report.conflicts.length} found`}>
                 Conflicts
               </SectionTitle>
@@ -490,7 +512,10 @@ export default function ChangeConsole({
                     className="rounded-lg border border-line bg-paper p-4"
                   >
                     <div className="flex flex-wrap items-center gap-2">
-                      <Chip tone={severityTone(conflict.severity)}>
+                      <Chip
+                        tone={severityTone(conflict.severity)}
+                        icon={severityIcon(conflict.severity)}
+                      >
                         {conflict.severity}
                       </Chip>
                       <span className="text-xs text-faint">
@@ -513,7 +538,7 @@ export default function ChangeConsole({
               </ul>
             </Card>
 
-            <Card>
+            <Card className="p-6">
               <SectionTitle meta={`${report.followUps.length} proposed`}>
                 Follow-ups
               </SectionTitle>
