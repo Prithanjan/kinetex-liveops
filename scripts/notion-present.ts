@@ -82,11 +82,25 @@ const callout = (
   emoji: string,
   color = "gray_background",
   bold = false,
-): AnyBlock => ({
-  object: "block",
-  type: "callout",
-  callout: { rich_text: rich(content, bold), icon: { type: "emoji", emoji }, color },
-});
+): AnyBlock => {
+  // Style the title so it reads like a card header and the rest like a note.
+  const parts = content.split("\n");
+  return {
+    object: "block",
+    type: "callout",
+    callout: {
+      icon: { type: "emoji", emoji },
+      color,
+      rich_text: [
+        ...parts.map((line, index) => ({
+          type: "text",
+          text: { content: line },
+          annotations: { bold: index === 0 && bold },
+        })),
+      ],
+    },
+  };
+};
 
 /** A step card: an emoji, a name, and one plain sentence under it. */
 const stepCard = (
@@ -94,7 +108,24 @@ const stepCard = (
   name: string,
   line: string,
   color = "orange_background",
-): AnyBlock => callout(`${name} — ${line}`, emoji, color, true);
+): AnyBlock => {
+  const parts = [`${name} — ${line}`];
+  return {
+    object: "block",
+    type: "callout",
+    callout: {
+      icon: { type: "emoji", emoji },
+      color,
+      rich_text: [
+        {
+          type: "text",
+          text: { content: parts[0] },
+          annotations: { bold: true },
+        },
+      ],
+    },
+  };
+};
 
 const linkToPage = (pageId: string): AnyBlock => ({
   object: "block",
@@ -319,6 +350,8 @@ function homeBlocks(dataPageId: string): AnyBlock[] {
  * reads as a sub-note underneath it.
  */
 function captionCallout(spec: DatabaseSpec, color: string): AnyBlock {
+  // The caption reads like a real template card: the name as a header, the
+  // purpose as the first line, and a separate reading guide as a note.
   return {
     object: "block",
     type: "callout",
@@ -326,12 +359,9 @@ function captionCallout(spec: DatabaseSpec, color: string): AnyBlock {
       icon: { type: "emoji", emoji: spec.icon },
       color,
       rich_text: [
-        {
-          type: "text",
-          text: { content: `${spec.title} — ${spec.purpose}` },
-          annotations: { bold: true },
-        },
-        { type: "text", text: { content: `\n${spec.readGuide}` } },
+        { type: "text", text: { content: spec.title }, annotations: { bold: true } },
+        { type: "text", text: { content: `  ${spec.purpose}` } },
+        { type: "text", text: { content: `  ${spec.readGuide}` } },
       ],
     },
   };
