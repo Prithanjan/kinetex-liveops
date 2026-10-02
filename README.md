@@ -84,6 +84,7 @@ tests/               Engine unit tests
 
 ## Documentation
 
+- [docs/implementation-plan.md](docs/implementation-plan.md) — **phased build plan and the next step**
 - [docs/PRD.md](docs/PRD.md) — problem, users, requirements, acceptance criteria
 - [docs/architecture.md](docs/architecture.md) — components and decisions
 - [docs/data-model.md](docs/data-model.md) — entities and the Notion database mapping
