@@ -1,0 +1,142 @@
+{
+  "events": [
+    {
+      "id": "evt-1",
+      "name": "Kinetex Summit 2026",
+      "date": "2026-10-05",
+      "status": "in_planning"
+    }
+  ],
+  "venues": [
+    {
+      "id": "ven-main",
+      "name": "Main Auditorium",
+      "capacity": 300,
+      "equipmentIds": ["eq-projector-hd", "eq-pa-main", "eq-stage-lights", "eq-recording-kit"]
+    },
+    {
+      "id": "ven-hall-b",
+      "name": "Hall B",
+      "capacity": 120,
+      "equipmentIds": ["eq-projector-hd", "eq-pa-small"]
+    },
+    {
+      "id": "ven-workshop",
+      "name": "Workshop Room",
+      "capacity": 40,
+      "equipmentIds": ["eq-pa-small", "eq-whiteboard"]
+    }
+  ],
+  "equipment": [
+    { "id": "eq-projector-hd", "name": "HD Projector", "type": "display", "status": "available" },
+    { "id": "eq-pa-main", "name": "Main PA System", "type": "audio", "status": "available" },
+    { "id": "eq-pa-small", "name": "Portable PA", "type": "audio", "status": "available" },
+    { "id": "eq-stage-lights", "name": "Stage Lighting Rig", "type": "lighting", "status": "available" },
+    { "id": "eq-recording-kit", "name": "Recording Kit", "type": "recording", "status": "available" },
+    { "id": "eq-whiteboard", "name": "Digital Whiteboard", "type": "display", "status": "maintenance" }
+  ],
+  "sessions": [
+    {
+      "id": "ses-keynote",
+      "eventId": "evt-1",
+      "title": "Opening Keynote",
+      "startTime": "2026-10-05T09:00:00+05:30",
+      "endTime": "2026-10-05T10:30:00+05:30",
+      "venueId": "ven-main",
+      "requiredEquipmentIds": ["eq-projector-hd", "eq-pa-main", "eq-stage-lights", "eq-recording-kit"],
+      "assignedPersonIds": ["per-1", "per-2"],
+      "participantGroupIds": ["pg-all"]
+    },
+    {
+      "id": "ses-panel",
+      "eventId": "evt-1",
+      "title": "AI in Practice Panel",
+      "startTime": "2026-10-05T11:00:00+05:30",
+      "endTime": "2026-10-05T12:30:00+05:30",
+      "venueId": "ven-main",
+      "requiredEquipmentIds": ["eq-projector-hd", "eq-pa-main", "eq-recording-kit"],
+      "assignedPersonIds": ["per-2", "per-3"],
+      "participantGroupIds": ["pg-all"]
+    },
+    {
+      "id": "ses-workshop",
+      "eventId": "evt-1",
+      "title": "Hands-on Workshop",
+      "startTime": "2026-10-05T14:00:00+05:30",
+      "endTime": "2026-10-05T16:00:00+05:30",
+      "venueId": "ven-workshop",
+      "requiredEquipmentIds": ["eq-pa-small", "eq-whiteboard"],
+      "assignedPersonIds": ["per-4"],
+      "participantGroupIds": ["pg-workshop"]
+    },
+    {
+      "id": "ses-closing",
+      "eventId": "evt-1",
+      "title": "Closing Ceremony",
+      "startTime": "2026-10-05T16:30:00+05:30",
+      "endTime": "2026-10-05T17:30:00+05:30",
+      "venueId": "ven-main",
+      "requiredEquipmentIds": ["eq-pa-main", "eq-stage-lights"],
+      "assignedPersonIds": ["per-1", "per-4"],
+      "participantGroupIds": ["pg-all"]
+    }
+  ],
+  "people": [
+    { "id": "per-1", "name": "A. Coordinator", "roles": ["organizer"], "skills": ["scheduling", "stakeholder comms"] },
+    { "id": "per-2", "name": "V. Lead", "roles": ["volunteer_coordinator"], "skills": ["stage management"] },
+    { "id": "per-3", "name": "L. Ops", "roles": ["logistics"], "skills": ["av", "transport"] },
+    { "id": "per-4", "name": "C. Media", "roles": ["communications"], "skills": ["recording", "social"] },
+    { "id": "per-5", "name": "D. Director", "roles": ["leadership"], "skills": ["escalation"] }
+  ],
+  "participantGroups": [
+    { "id": "pg-all", "name": "All Attendees", "size": 240 },
+    { "id": "pg-workshop", "name": "Workshop Cohort", "size": 35 }
+  ],
+  "tasks": [
+    {
+      "id": "tsk-1",
+      "title": "Confirm keynote AV list",
+      "ownerRole": "logistics",
+      "ownerPersonId": "per-3",
+      "sessionId": "ses-keynote",
+      "status": "in_progress",
+      "dueAt": "2026-10-03T18:00:00+05:30"
+    },
+    {
+      "id": "tsk-2",
+      "title": "Brief stage volunteers",
+      "ownerRole": "volunteer_coordinator",
+      "ownerPersonId": "per-2",
+      "sessionId": "ses-keynote",
+      "status": "todo",
+      "dueAt": "2026-10-04T12:00:00+05:30"
+    },
+    {
+      "id": "tsk-3",
+      "title": "Send pre-event email to all attendees",
+      "ownerRole": "communications",
+      "ownerPersonId": "per-4",
+      "sessionId": "ses-keynote",
+      "status": "done",
+      "dueAt": "2026-10-02T18:00:00+05:30"
+    },
+    {
+      "id": "tsk-4",
+      "title": "Print workshop handouts",
+      "ownerRole": "logistics",
+      "ownerPersonId": "per-3",
+      "sessionId": "ses-workshop",
+      "status": "todo",
+      "dueAt": "2026-10-04T18:00:00+05:30"
+    },
+    {
+      "id": "tsk-5",
+      "title": "Prepare leadership status briefing",
+      "ownerRole": "leadership",
+      "ownerPersonId": "per-5",
+      "status": "todo",
+      "dueAt": "2026-10-05T08:00:00+05:30"
+    }
+  ],
+  "changeLog": []
+}
