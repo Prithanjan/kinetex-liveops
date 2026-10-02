@@ -58,13 +58,15 @@ curl -X POST http://localhost:3000/api/reset
 
 ### Connecting real Notion
 
-One shared page is the only manual step; the scripts create the eight databases
-and the demo data.
+The only input is an integration token. The scripts create a top level project
+page, all eight databases with their properties and relations, and the demo
+data.
 
 ```bash
-cp .env.example .env.local   # set NOTION_TOKEN + NOTION_PARENT_PAGE_ID
-bun run notion:setup         # creates all 8 databases, writes ids to .env.local
+cp .env.example .env.local   # set NOTION_TOKEN only
+bun run notion:setup         # creates the project page + 8 databases
 bun run notion:seed          # populates the demo event
+bun run notion:doctor        # audit: access, record counts, Domain IDs
 ```
 
 Full guide: [docs/notion-setup.md](docs/notion-setup.md).
@@ -115,7 +117,7 @@ tests/               Engine, Notion mapping, and report unit tests
 
 ## Honest status (Measured-or-Placeholder)
 
-- **Notion mapping is implemented but not yet verified live.** The schema, reader, writer, and setup scripts are built and the pure mapping is unit-tested. They have not been run against a real workspace. Say *"mapping implemented, live verification pending"*; do not claim live sync until `docs/notion-setup.md` verification passes.
+- **Notion read and write are verified against a live workspace** (2026-10-02): 26 seeded pages read back with identical domain ids and relations; an approved change created a linked Change Log row, 7 task pages, and updated the session's Venue relation; `notion:doctor` reported 34 records with no missing Domain IDs. This integration is on-demand read/write, not a webhook sync.
 - **The generated summary is rules-based, not an LLM call.** The `generator` field says so explicitly. No AI call is made in the current build.
 - **Role views are role-filtered interfaces, not access-controlled.** No auth or permissions are implemented.
 - **No claim of measured operational improvement.** Impact numbers are counts over the seed graph, not field metrics.

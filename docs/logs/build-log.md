@@ -95,3 +95,46 @@ the owner supplies credentials, and complete Phase 2.
 
 Phase 2 done. Phase 1 code complete; live Notion verification pending the owner's
 credentials. Repo pushed.
+
+## 2026-10-02 — 03: Notion live verification
+
+**Goal:** set up, test, and audit the real Notion workspace; prepare Phase 3.
+
+**Built**
+
+- `scripts/notion-doctor.ts` (+ `bun run notion:doctor`): audits token validity,
+  visible pages/databases with parents, configured record counts, and Domain ID
+  integrity.
+- `scripts/notion-setup.ts`: now creates a workspace-level `Kinetex LiveOps`
+  parent page when none is configured, so the owner's only input is a token.
+- `lib/data/notion/schema.ts`: corrected creation order (Change Log before Tasks)
+  with a guard that names the ordering bug instead of failing opaquely.
+- `docs/decisions/0002-notion-adapter-incremental-write.md`.
+- `docs/specs/0002-multi-change-types.md` (Phase 3 preparation).
+- Honesty pass across README, AGENTS, demo-script, data-model, implementation-plan,
+  notion-setup.
+
+**Incident**
+
+First setup run failed midway: `Tasks.Source Change` needed the Change Log
+ database before it existed. Six of eight databases were created before the
+ failure. Repaired by archiving the partial parent page and its six databases,
+ then re-running with the corrected order. Encoded the ordering as a hard rule
+ in the schema so it cannot recur.
+
+**Live verification (measured)**
+
+- setup: 1 parent page + 8 databases.
+- seed: 26 pages.
+- read: identical graph to the local seed, relations resolved to domain ids.
+- preview: 13 affected, 4 conflicts, 7 follow-ups.
+- apply: wrote `chg-001`; re-read showed venue moved, 12 tasks, 1 change log row
+  with 7 linked tasks.
+- report: 1 change, 4 lessons.
+- doctor after write: 34 records, 0 missing Domain IDs.
+- `bun test` 20 pass · `tsc --noEmit` clean · `bun run build` 9 routes.
+
+**Result**
+
+Phase 1 verified live; its non-claim retired for read/write. Phase 3 spec ready.
+Repo pushed. Owner action: rotate the token pasted into chat.

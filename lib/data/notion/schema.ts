@@ -147,25 +147,9 @@ export const NOTION_SCHEMA: DatabaseSpec[] = [
     ],
   },
   {
-    key: "tasks",
-    title: "Tasks",
-    titleProperty: "Title",
-    envVar: "NOTION_DB_TASKS",
-    properties: [
-      { name: "Title", kind: "title" },
-      domainId,
-      { name: "Owner Role", kind: "select", options: [...ROLE_OPTIONS] },
-      { name: "Owner", kind: "relation", relatesTo: "people" },
-      { name: "Session", kind: "relation", relatesTo: "sessions" },
-      { name: "Status", kind: "select", options: [...TASK_STATUS_OPTIONS] },
-      { name: "Due", kind: "date" },
-      { name: "Source Change", kind: "relation", relatesTo: "changeLog" },
-    ],
-  },
-  {
-    // Created after Tasks because it relates to them. Change Log stores the
-    // follow-up task ids as rich text, not a relation, to avoid a cycle
-    // (Tasks.Source Change -> Change Log, and back). See docs/data-model.md.
+    // Created before Tasks because Tasks.Source Change relates to it. Change
+    // Log stores follow-up task ids as rich text, not a relation, to avoid a
+    // cycle (Tasks.Source Change -> Change Log, and back). See docs/data-model.md.
     key: "changeLog",
     title: "Change Log",
     titleProperty: "Id",
@@ -185,6 +169,22 @@ export const NOTION_SCHEMA: DatabaseSpec[] = [
       { name: "Approved By", kind: "select", options: [...ROLE_OPTIONS] },
       { name: "Summary", kind: "rich_text" },
       { name: "Created", kind: "date" },
+    ],
+  },
+  {
+    key: "tasks",
+    title: "Tasks",
+    titleProperty: "Title",
+    envVar: "NOTION_DB_TASKS",
+    properties: [
+      { name: "Title", kind: "title" },
+      domainId,
+      { name: "Owner Role", kind: "select", options: [...ROLE_OPTIONS] },
+      { name: "Owner", kind: "relation", relatesTo: "people" },
+      { name: "Session", kind: "relation", relatesTo: "sessions" },
+      { name: "Status", kind: "select", options: [...TASK_STATUS_OPTIONS] },
+      { name: "Due", kind: "date" },
+      { name: "Source Change", kind: "relation", relatesTo: "changeLog" },
     ],
   },
 ];

@@ -1,8 +1,14 @@
 # Notion Setup
 
 **Goal:** get a real Notion workspace connected so the Notion source works, with
-as little manual work as possible. You create one page. The scripts create the
-eight databases, their properties, and the demo data.
+as little manual work as possible. The only manual step is creating an
+integration and copying its token. The scripts create a top level project page,
+the eight databases with their properties and relations, and the demo data.
+
+**Verified 2026-10-02:** setup created the page and all eight databases; seed
+created 26 pages; reading returned identical domain ids and relations; approving
+a change wrote a linked Change Log row, 7 task pages, and updated the session's
+Venue relation; the doctor reported 34 records with no missing Domain IDs.
 
 > **Do not paste your token into chat.** Put it in `.env.local` yourself (that
 > file is gitignored). Then just tell the agent "credentials are set" and it will
@@ -10,47 +16,44 @@ eight databases, their properties, and the demo data.
 
 ---
 
-## The four manual steps
+## The manual steps (about two minutes)
 
 ### Step 1 — Create the integration
 
 1. Open https://www.notion.so/my-integrations
 2. **New integration** → name it `Kinetex LiveOps` → internal → Save.
-3. Copy the **Internal Integration Secret** (starts with `secret_`).
+3. Copy the **Internal Integration Secret**.
 
-### Step 2 — Create one page and share it
+No page needs to be created or shared. The integration can create a top level
+page itself, and `notion:setup` does exactly that.
 
-1. In Notion, create a normal empty page. Name it `Kinetex LiveOps`.
-2. On that page: **⋯ (top right) → Connections → Connect to → Kinetex LiveOps**.
-3. Copy the page id: open the page as a full page, and the 32-character hex
-   string in the URL is the id. (It looks like
-   `https://www.notion.so/Kinetex-LiveOps-<32 hex chars>`.)
-
-This page is the parent. Everything else is created under it.
-
-### Step 3 — Put two values in `.env.local`
+### Step 2 — Put the token in `.env.local`
 
 ```bash
 cp .env.example .env.local
 ```
 
-Then set:
+Set only:
 
 ```
 NOTION_TOKEN=secret_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-NOTION_PARENT_PAGE_ID=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
-Leave the `NOTION_DB_*` lines empty. The setup script fills them.
+Leave `NOTION_PARENT_PAGE_ID` and every `NOTION_DB_*` line empty. The setup
+script fills them all.
 
-### Step 4 — Run the setup, then seed
+> Do not paste the token into chat. Keep it in `.env.local`, which is gitignored.
+
+### Step 3 — Run setup, seed, and audit
 
 ```bash
-bun run notion:setup    # creates the 8 databases, writes their ids to .env.local
+bun run notion:setup    # creates a top level "Kinetex LiveOps" page + 8 databases
 bun run notion:seed     # creates the demo event, sessions, equipment, tasks
+bun run notion:doctor   # verify access, record counts, Domain ID integrity
 ```
 
-`notion:setup` also sets `KINETEX_SOURCE=notion` in `.env.local`.
+`notion:setup` writes the parent page id and all eight database ids into
+`.env.local`, and sets `KINETEX_SOURCE=notion`.
 
 ---
 
@@ -99,8 +102,8 @@ reader and writer import the same file, so property names cannot drift.
 
 | Error | Cause | Fix |
 |---|---|---|
-| `object_not_found` / `Could not find page` | The page is not shared with the integration | Step 2.3: connect the integration on the parent page. |
-| `unauthorized` | Bad or missing token | Re-copy the secret in Step 3. |
+| `object_not_found` / `Could not find page` | A configured page or database id is stale or belongs to a deleted page | Clear the relevant `.env.local` line and re-run `notion:setup`. |
+| `unauthorized` | Bad or missing token | Re-copy the secret into `.env.local`. |
 | `validation_error: ... property does not exist` | A database was created by hand without a property | Run `bun run notion:reset`, delete the databases, and re-run `notion:setup`. |
 | Setup works, seed fails on a relation | Databases exist but were made manually in the wrong order | Let `notion:setup` create all eight. Do not hand-create them. |
 | Pages appear but `/` shows nothing | `KINETEX_SOURCE` not set, or the app needs a restart | `notion:setup` sets it; restart `bun run dev`. |

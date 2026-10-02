@@ -64,12 +64,19 @@ bun run notion:reset   # archive all pages for a clean re-seed
 | Runtime state (gitignored) | `data/runtime/graph.json` |
 | Docs | `docs/*` |
 
+## Verified capabilities (2026-10-02)
+
+- Notion read and write are verified live: 26 seeded pages read back with
+  identical domain ids and relations; an approved change wrote a linked Change
+  Log row, 7 task pages, and updated the session's Venue relation.
+- `bun run notion:doctor` audits access, record counts, and Domain ID integrity.
+
 ## Non-claims (do not contradict these)
 
-- Notion mapping is implemented and unit-tested but **not yet verified against a
-  live workspace**. Until it is, say "mapping implemented, live verification
-  pending". Do not claim live sync.
-- Never receive the Notion token in chat. The owner sets it in `.env.local`.
+- Notion integration is **on-demand read/write**, not a webhook sync. Do not
+  claim instant synchronization for edits made directly in Notion.
+- Never receive the Notion token in chat. The owner sets it in `.env.local`. If a
+  token is ever pasted into a log, tell the owner to rotate it.
 - The summary is rules-based, not an LLM call.
 - Role views are not access-controlled.
 - No measured operational improvement is claimed.

@@ -1,12 +1,10 @@
 /**
  * Create the Kinetex LiveOps databases in Notion, then write their ids into
- * .env.local. This removes the manual step of building 8 databases by hand.
+ * .env.local.
  *
- * Prerequisites (the only manual work):
- *   1. Create one empty page in Notion, named "Kinetex LiveOps".
- *   2. Create an internal integration and copy its secret.
- *   3. Share that page with the integration (⋯ → Connections).
- *   4. Put NOTION_TOKEN and NOTION_PARENT_PAGE_ID in .env.local.
+ * Only prerequisite: NOTION_TOKEN in .env.local. If NOTION_PARENT_PAGE_ID is
+ * empty, this creates a top level "Kinetex LiveOps" page and uses it as the
+ * parent. Everything else is automated.
  *
  * Run:  bun run notion:setup
  * Re-run is safe: databases already recorded in .env.local are reused.
@@ -16,8 +14,10 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { NOTION_SCHEMA, databaseSpec, type DatabaseKey } from "../lib/data/notion/schema";
 
 const ENV_PATH = ".env.local";
+const PARENT_PAGE_TITLE = "Kinetex LiveOps";
 
 type CreateDatabaseArgs = Parameters<Client["databases"]["create"]>[0];
+type CreatePageArgs = Parameters<Client["pages"]["create"]>[0];
 
 function asProperties(value: Record<string, unknown>): CreateDatabaseArgs["properties"] {
   return value as unknown as CreateDatabaseArgs["properties"];
@@ -35,28 +35,58 @@ function setEnvValue(contents: string, key: string, value: string): string {
   return `${contents}${separator}${line}\n`;
 }
 
-function requiredEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    console.error(`\nMissing ${name} in .env.local.`);
+function requireToken(): string {
+  const token = process.env.NOTION_TOKEN;
+  if (!token) {
+    console.error("\nMissing NOTION_TOKEN in .env.local.");
     console.error(
-      "Create one page in Notion, share it with your integration, then set " +
-        "NOTION_TOKEN and NOTION_PARENT_PAGE_ID. See docs/notion-setup.md.\n",
+      "Create an internal integration at https://www.notion.so/my-integrations, " +
+        "then set NOTION_TOKEN. See docs/notion-setup.md.\n",
     );
     process.exit(1);
   }
-  return value;
+  return token;
+}
+
+/**
+ * Use the configured parent page, or create a top level page for the project.
+ * Creating a workspace parent page works for internal integrations with the
+ * insert content capability.
+ */
+async function resolveParentPage(
+  client: Client,
+  env: string,
+): Promise<{ pageId: string; env: string }> {
+  const configured = process.env.NOTION_PARENT_PAGE_ID;
+  if (configured) {
+    console.log(`= Parent page (from .env.local): ${configured}`);
+    return { pageId: configured, env };
+  }
+
+  const page = await client.pages.create({
+    parent: { type: "workspace", workspace: true },
+    properties: {
+      title: {
+        title: [{ type: "text", text: { content: PARENT_PAGE_TITLE } }],
+      },
+    },
+  } as unknown as CreatePageArgs);
+
+  console.log(`+ Parent page "${PARENT_PAGE_TITLE}" (${page.id})`);
+  return { pageId: page.id, env: setEnvValue(env, "NOTION_PARENT_PAGE_ID", page.id) };
 }
 
 async function main() {
-  const token = requiredEnv("NOTION_TOKEN");
-  const parentPageId = requiredEnv("NOTION_PARENT_PAGE_ID");
+  const token = requireToken();
   const client = new Client({ auth: token });
 
   console.log("Kinetex LiveOps — Notion setup\n");
 
-  const databaseIds = {} as Record<DatabaseKey, string>;
   let env = readEnvFile();
+  const parent = await resolveParentPage(client, env);
+  env = parent.env;
+
+  const databaseIds = {} as Record<DatabaseKey, string>;
 
   for (const spec of NOTION_SCHEMA) {
     const existing = process.env[spec.envVar];
@@ -113,7 +143,7 @@ async function main() {
     }
 
     const database = await client.databases.create({
-      parent: { type: "page_id", page_id: parentPageId },
+      parent: { type: "page_id", page_id: parent.pageId },
       title: [{ type: "text", text: { content: spec.title } }],
       properties: asProperties(properties),
     });
@@ -121,7 +151,6 @@ async function main() {
     databaseIds[spec.key] = database.id;
     env = setEnvValue(env, spec.envVar, database.id);
     console.log(`+ ${spec.title} (${spec.envVar})`);
-
   }
 
   env = setEnvValue(env, "KINETEX_SOURCE", "notion");
@@ -129,7 +158,7 @@ async function main() {
 
   console.log(`\nWrote ${NOTION_SCHEMA.length} database ids to ${ENV_PATH}.`);
   console.log("KINETEX_SOURCE=notion is set.");
-  console.log("\nNext: bun run notion:seed   (populate the demo event)");
+  console.log("\nNext: bun run notion:seed");
 }
 
 main().catch((error) => {

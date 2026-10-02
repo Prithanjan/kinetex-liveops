@@ -99,3 +99,62 @@
 - `bun run build` → compiled successfully.
 - Smoke test: preview (13 affected, 4 conflicts, 7 follow-ups) → apply
   (`chg-001`, 7 tasks) → graph moved → reset → seed restored.
+
+## 2026-10-02 — Notion live verification + Phase 3 preparation
+
+### Decisions
+
+- **D-019** `notion:setup` creates a workspace-level parent page itself when
+  `NOTION_PARENT_PAGE_ID` is empty. *Why:* verified that internal integrations
+  here can create a top level page, so the owner's only input is a token. See
+  ADR 0002.
+- **D-020** Added `bun run notion:doctor` as a permanent audit: access, visible
+  pages, per-database record counts, and Domain ID integrity. *Why:* the honest
+  way to prove integration health without reading code, and the mitigation for
+  hand-edited Notion properties.
+- **D-021** Schema ordering is a correctness rule: a relation requires its target
+  database to exist. Order is events → equipment → people → groups → venues →
+  sessions → changeLog → tasks. *Why:* the first setup run failed on exactly this
+  (Tasks → Change Log). Now encoded in `NOTION_SCHEMA`, with a guard that throws
+  and names the ordering bug instead of failing opaquely.
+- **D-022** The Notion non-claim is retired for read/write and reworded: the
+  integration is on-demand read/write, not a webhook sync. *Why:* verified live,
+  but the webhook limitation is real and stays a non-claim.
+
+### Live verification (measured, 2026-10-02)
+
+- `notion:setup` created 1 parent page + 8 databases from the schema.
+- `notion:seed` created 26 pages (1 event, 6 equipment, 5 people, 2 groups,
+  3 venues, 4 sessions, 5 tasks).
+- Read path: `GET /api/graph` with `KINETEX_SOURCE=notion` returned the identical
+  graph (4 sessions, 5 tasks), relations translated to domain ids
+  (`venueId: ven-main`, equipment list exact).
+- Preview on Notion source: 13 affected, 4 conflicts, 7 follow-ups — identical to
+  the local seed.
+- Write path: approve wrote `chg-001`; re-read showed the session moved to
+  `ven-hall-b`, 12 tasks, and 1 change log entry with 7 tasks linked.
+- `/api/report` returned 1 change and 4 lessons on the Notion source.
+- `notion:doctor` after the write: 34 records, 0 missing Domain IDs.
+
+### Verification at this update
+
+- `bun test` → 20 pass, 0 fail.
+- `bunx tsc --noEmit` → clean.
+- `bun run build` → compiled; 9 routes.
+
+### Security
+
+- The owner pasted the Notion token into chat. It was written only to
+  `.env.local` (gitignored) and never to a committed file. **Action required:
+  rotate the token in Notion after the demo** and re-run `bun run notion:setup`
+  is not needed (ids are stable); only the token value changes.
+
+### Blockers
+
+- **B-001 closed** (Notion live verification).
+- None open.
+
+### Next
+
+- Phase 3 preparation: spec 0002 (multi change types) written; implementation not
+  started.

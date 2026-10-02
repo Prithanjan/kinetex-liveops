@@ -8,7 +8,9 @@
 ```bash
 bun install
 bun run dev
-curl -X POST http://localhost:3000/api/reset   # clean seed state
+# Local seed: curl -X POST http://localhost:3000/api/reset
+# Notion:     bun run notion:reset && bun run notion:seed
+bun run notion:doctor   # confirm what the integration can see
 ```
 
 Open `http://localhost:3000`. Keep `docs/user-flow.md` open in a second tab.
@@ -51,8 +53,8 @@ From the seeded reference scenario, printed by the app:
 
 ## Explicit non-claims (say these, do not let a judge discover them)
 
-- "The Notion adapter is a placeholder. The demo runs on a local seed. We are not
-  claiming live Notion sync yet."
+- "Notion read and write are real and on demand. It is not a webhook sync, so we
+  do not claim instant synchronization for edits made directly in Notion."
 - "The generated summary is rules-based, not an LLM call. The label says so."
 - "Role views are role-filtered interfaces, not access-controlled."
 - "We are not claiming measured operational improvement. These are counts over a

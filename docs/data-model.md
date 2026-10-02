@@ -124,12 +124,13 @@ Change Log keeps follow-up task ids as text rather than a relation, because
 `Tasks.Source Change` already relates to Change Log and a back-relation would
 create a cycle.
 
-> **Status: implemented, pending live verification.** The mapping above is built
-> (`lib/data/notion/*`) and `scripts/notion-setup.ts` creates the databases from
-> `lib/data/notion/schema.ts`. Read and write paths are unit-tested against
-> fixtures; they have not yet been run against a real workspace. Until they have,
-> do not claim live sync: the honest statement is "mapping implemented, live
-> verification pending". See [docs/notion-setup.md](notion-setup.md).
+> **Status: implemented and verified live (2026-10-02).** `scripts/notion-setup.ts`
+> created all eight databases from `lib/data/notion/schema.ts`. Reading returned
+> 26 seeded pages with identical domain ids and relations; approving a change
+> wrote a linked Change Log row, 7 task pages, and updated the session's Venue
+> relation. `bun run notion:doctor` reported 34 records with no missing Domain
+> IDs. This is on-demand read/write, not a webhook sync. See
+> [docs/notion-setup.md](notion-setup.md).
 
 ### 3.1 Automation
 

@@ -33,14 +33,12 @@ approval write-back, 4 API routes, 3 screens, 8 passing tests, full docs.
 
 Since then (Phase 1 code + Phase 2):
 
-- **Phase 1 code complete, live verification pending.** Notion schema is a
-  single source of truth (`lib/data/notion/schema.ts`); `bun run notion:setup`
-  creates all 8 databases and writes ids to `.env.local`;
-  `bun run notion:seed` / `:reset` populate and clear the demo. Read and
-  incremental write paths are built and the pure mapping is unit-tested.
-  Remaining: run it against a real workspace (needs the owner's token and one
-  shared page), then retire the placeholder non-claim. See
-  [docs/notion-setup.md](notion-setup.md).
+- **Phase 1 complete and verified live (2026-10-02).** `bun run notion:setup`
+  creates a top level project page and all 8 databases from the single-source
+  schema; `notion:seed` populated 26 pages; reading returned identical domain ids
+  and relations; approving a change wrote a linked Change Log row, 7 task pages,
+  and updated the session's Venue relation. `bun run notion:doctor` is the audit.
+  See [docs/notion-setup.md](notion-setup.md).
 - **Phase 2 complete.** Post-event report builder, `/api/report`, `/report`
   screen, lessons derived from persisted conflicts, tests.
 - 20 tests passing across engine, Notion mapping, and report.
@@ -55,7 +53,7 @@ Since then (Phase 1 code + Phase 2):
 | Phase | Theme | Blocked on owner? | Order | Status |
 |---|---|---|---|---|
 | 0 | Notion workspace + prerequisites | **Yes** | First, or parallel | waiting on owner |
-| 1 | Real Notion source (read + write) | Yes | After 0 | code done, live verification pending |
+| 1 | Real Notion source (read + write) | Yes | After 0 | **done, verified live** |
 | 2 | Post-event report + lesson compiler | No | Any time | **done** |
 | 3 | More change types | No | After 1 or 2 | not started |
 | 4 | Volunteer reassignment | No | After 3 | not started |
