@@ -14,9 +14,11 @@
 | 5 | Role views + briefing | 1 · Foundation | in-progress | [0001](../specs/0001-venue-change-impact-engine.md) |
 | 6 | Real Notion read/write mapping | 2 · Integration | planned | needs spec |
 | 7 | Post-event report + lesson compiler | 2 · Integration | planned | needs spec |
-| 8 | Additional change types (time, resource, person) | 3 · Breadth | planned | needs spec |
-| 9 | Automatic volunteer reassignment | 3 · Breadth | planned | needs spec |
+| 8 | Additional change types (time, resource, person) | 3 · Breadth | done | [0002](../specs/0002-multi-change-types.md) |
+| 9 | Volunteer reassignment | 3 · Breadth | done (lean) | [0002](../specs/0002-multi-change-types.md) |
 | 10 | Notion webhook sync | 3 · Breadth | planned | needs spec |
+| 11 | GitHub Actions CI | 3 · Breadth | done | CI workflow |
+| 12 | Deploy (Vercel) | 3 · Breadth | planned | needs owner auth |
 
 Legend: `planned` · `in-progress` · `done` · `existing` · `dropped`
 
@@ -84,10 +86,12 @@ Turn the change log into a structured report and reusable lessons.
 
 ## Phase 3 · Breadth
 
-### 8. Additional change types
-Time, resource, and person changes reuse the same graph and change log.
-### 9. Automatic volunteer reassignment
-Skill-based reassignment of uncovered shifts.
+### 8. Additional change types — **done**
+Time, resource, and person changes reuse the same graph, rule registry, and
+change log. 14 rules across 6 files; `lib/engine/rules/` 
+### 9. Volunteer reassignment — **done (lean)**
+Uncovered roles produce ranked candidate proposals (by current load), surfaced as
+"proposed, not assigned". Automatic application is deliberately not built.
 ### 10. Notion webhook sync
 React to Notion edits. Notion documents webhooks, but page-update events can be
 aggregated or delayed; treat as stretch.

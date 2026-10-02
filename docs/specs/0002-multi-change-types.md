@@ -1,6 +1,6 @@
 # 0002 — Multi Change Types + Rule Registry
 
-**Status:** Proposed · **Mode:** FEATURE · **Date:** 2026-10-02
+**Status:** Accepted (shipped 2026-10-02) · **Mode:** FEATURE · **Date:** 2026-10-02
 **Linked scope:** features 8 and 9 in [docs/scope/scope.md](../scope/scope.md)
 **Depends on:** [spec 0001](0001-venue-change-impact-engine.md) (shipped, verified live)
 

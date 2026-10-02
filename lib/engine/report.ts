@@ -36,6 +36,22 @@ const LESSONS: Record<string, string> = {
     "Create the attendee notification task the moment a change is proposed, not after approval.",
   coverage_gap:
     "Assign a named owner to every role a session needs at planning time.",
+  event_hours_violation:
+    "Confirm out-of-hours slots explicitly, and check staffing and access for them.",
+  person_double_booked:
+    "Check people assignments for overlaps whenever a time or person change is proposed.",
+  attendee_overlap:
+    "Check the audience calendar, not just the room calendar, before moving a session.",
+  equipment_elsewhere:
+    "Treat equipment as a shared pool: check other sessions in the same slot before committing.",
+  maintenance_window:
+    "Publish maintenance windows to planning so blocked equipment cannot be promised.",
+  transport_lead_time:
+    "Add a transport step whenever equipment comes from a different room.",
+  unassigned_role:
+    "Never let a needed role fall to zero owners; block the change until it is refilled.",
+  skill_gap:
+    "Match assignments to the roles a session needs, and brief anyone who does not hold one.",
 };
 
 function lessonFor(kind: string): string {

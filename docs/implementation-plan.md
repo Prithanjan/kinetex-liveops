@@ -41,7 +41,14 @@ Since then (Phase 1 code + Phase 2):
   See [docs/notion-setup.md](notion-setup.md).
 - **Phase 2 complete.** Post-event report builder, `/api/report`, `/report`
   screen, lessons derived from persisted conflicts, tests.
-- 20 tests passing across engine, Notion mapping, and report.
+- **Phase 3 complete.** `ChangeRequest` is a discriminated union; rules live in
+  a registry (`lib/engine/rules/`, 14 rules across 6 files); venue, time,
+  resource, and person changes all run preview → approve → write-back.
+- **Phase 4 (lean).** Uncovered roles produce ranked candidate proposals, shown
+  as "proposed, not assigned". Nothing is auto-reassigned.
+- **Phase 5 partial.** GitHub Actions CI added. Webhooks and a deploy remain.
+- **Frontend redesigned** on a warm Anthropic-inspired design system.
+- 32 tests passing across engine, rules, Notion mapping, and report.
 
 ## How to use this plan
 
@@ -55,10 +62,10 @@ Since then (Phase 1 code + Phase 2):
 | 0 | Notion workspace + prerequisites | **Yes** | First, or parallel | waiting on owner |
 | 1 | Real Notion source (read + write) | Yes | After 0 | **done, verified live** |
 | 2 | Post-event report + lesson compiler | No | Any time | **done** |
-| 3 | More change types | No | After 1 or 2 | not started |
-| 4 | Volunteer reassignment | No | After 3 | not started |
-| 5 | Webhooks, deploy, CI, hardening | Partly | After 1 | not started |
-| 6 | Demo, rehearsal, release | No | Last | not started |
+| 3 | More change types | No | After 1 or 2 | **done** (venue, time, resource, person) |
+| 4 | Volunteer reassignment | No | After 3 | **done (lean)**: candidate proposals, no auto-assign |
+| 5 | Webhooks, deploy, CI, hardening | Partly | After 1 | CI done; webhooks + deploy not started |
+| 6 | Demo, rehearsal, release | No | Last | **done**: CHECKOUT.md walkthrough; live rehearsal |
 
 ---
 

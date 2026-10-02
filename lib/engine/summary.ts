@@ -4,7 +4,6 @@ import type {
   GeneratedSummary,
   ProposedFollowUp,
   Session,
-  Venue,
 } from "@/lib/domain/types";
 
 export const GENERATOR_LABEL = "rules-based explanation v0 (not an LLM call)";
@@ -16,8 +15,7 @@ export const GENERATOR_LABEL = "rules-based explanation v0 (not an LLM call)";
  */
 export function buildSummary(
   session: Session,
-  fromVenue: Venue | undefined,
-  toVenue: Venue | undefined,
+  changeLabel: string,
   affected: AffectedRecord[],
   conflicts: Conflict[],
   followUps: ProposedFollowUp[],
@@ -28,10 +26,9 @@ export function buildSummary(
 
   const parts: string[] = [];
   parts.push(
-    `Changing "${session.title}" from ${fromVenue?.name ?? "its venue"} to ${
-      toVenue?.name ?? "the requested venue"
-    } touches ${affected.length} connected records.`,
+    `Changing "${session.title}" (${changeLabel}) touches ${affected.length} connected records.`,
   );
+
   if (conflicts.length === 0) {
     parts.push("No conflicts were detected by the current rules.");
   } else {
@@ -40,6 +37,7 @@ export function buildSummary(
     );
     parts.push(conflicts.map((c) => c.message).join(" "));
   }
+
   parts.push(
     `Proposed ${followUps.length} follow-up(s) owned by: ${owners.join(", ") || "none"}.`,
   );

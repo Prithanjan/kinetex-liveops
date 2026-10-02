@@ -195,6 +195,9 @@ export function pageToChangeLogEntry(
     approvedByRole: (readSelect(page, "Approved By") || "organizer") as Role,
     summary: readRichText(page, "Summary"),
     conflicts: parseConflicts(readRichText(page, "Conflicts")),
+    // Older entries predate the Change property; fall back to the summary.
+    changeLabel:
+      readRichText(page, "Change") || readRichText(page, "Summary").slice(0, 120),
   };
 }
 
@@ -338,10 +341,15 @@ export function changeLogToProperties(
     Id: title(entry.id),
     "Domain ID": domainIdProperty(entry.id),
     Type: { select: { name: entry.changeType } },
+    Change: richText(entry.changeLabel),
     Event: relation(resolveMany(resolve, "events", [entry.eventId])),
     Session: relation(resolveMany(resolve, "sessions", [entry.sessionId])),
-    "From Venue": relation(resolveMany(resolve, "venues", [entry.fromVenueId])),
-    "To Venue": relation(resolveMany(resolve, "venues", [entry.toVenueId])),
+    "From Venue": relation(
+      resolveMany(resolve, "venues", entry.fromVenueId ? [entry.fromVenueId] : []),
+    ),
+    "To Venue": relation(
+      resolveMany(resolve, "venues", entry.toVenueId ? [entry.toVenueId] : []),
+    ),
     Reason: richText(entry.reason ?? ""),
     "Affected Records": richText(entry.affectedRecordIds.join(",")),
     "Follow-up Task IDs": richText(entry.followUpTaskIds.join(",")),

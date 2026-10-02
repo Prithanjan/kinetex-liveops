@@ -138,6 +138,7 @@ describe("change log round trip", () => {
       changeType: "venue_change",
       eventId: "evt-1",
       sessionId: "ses-keynote",
+      changeLabel: "Main Auditorium → Hall B",
       fromVenueId: "ven-main",
       toVenueId: "ven-hall-b",
       affectedRecordIds: ["ses-keynote", "ven-hall-b"],

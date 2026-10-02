@@ -138,3 +138,59 @@ First setup run failed midway: `Tasks.Source Change` needed the Change Log
 
 Phase 1 verified live; its non-claim retired for read/write. Phase 3 spec ready.
 Repo pushed. Owner action: rotate the token pasted into chat.
+
+## 2026-10-02 — 04: Phases 3 to 6 + redesign
+
+**Goal:** take the project to a fully demoable state without stopping.
+
+**Built — Phase 3 (multi change types)**
+
+- `ChangeRequest` is now a discriminated union: venue, time, resource, person.
+- `lib/engine/prospect.ts`: `proposedSession()` and `describeChange()` give every
+  rule a single post-change view and the UI a human label.
+- `lib/engine/rules/`: registry with 14 rules across 6 files (venue, schedule,
+  communication, coverage, resource, index). Legacy `conflicts.ts` removed.
+- `computeImpact` dispatches via the registry and builds the blast radius for any
+  change type.
+- Follow-ups are conflict-driven with a lead-time table; report lessons extended
+  for all nine new conflict kinds.
+
+**Built — Phase 4 (lean)**
+
+- `candidatesFor()` ranks people by current load for uncovered roles.
+- Candidates surface as "proposed, not assigned". No automatic reassignment.
+
+**Built — Phase 5**
+
+- `.github/workflows/ci.yml`: typecheck, test, build with `KINETEX_SOURCE=local`.
+- `notion:setup` now reconciles schema drift (additive only).
+
+**Built — Phase 6**
+
+- `CHECKOUT.md`: install, five minute tour, Notion path, command verification,
+  done checklist, troubleshooting, and explicit non-claims.
+
+**Built — redesign**
+
+- Design tokens in `app/globals.css`: Pampas paper, Crail terracotta, warm greys,
+  serif display, φ-derived type steps.
+- `components/ui.tsx` primitives; all four screens rebuilt on them.
+- `ChangeConsole` rebuilt with a change-type selector and per-type fields.
+
+**Incident (caught live)**
+
+- The first live non-venue test looked successful but the session's time had not
+  persisted: `applyToWorkspace` only updated the `Venue` relation. Fixed to write
+  the whole session record. Re-verified: start and end now persist to Notion.
+
+**Verification**
+
+- `bun test` → 32 pass, 0 fail.
+- `bunx tsc --noEmit` → clean. `bun run build` → 9 routes.
+- Live Notion: schema reconciled (2 changes), reset + seed restored 26 pages, a
+  time change applied with 7 tasks and 4 conflicts, and persisted on re-read.
+
+**Result**
+
+Fully demoable: four change types, role briefings, report with lessons, CI, and
+an audit tool. Deploy and webhooks remain the only open items.

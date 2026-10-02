@@ -6,6 +6,7 @@ import type {
   Task,
 } from "@/lib/domain/types";
 import { computeImpact } from "./impact";
+import { proposedSession } from "./prospect";
 
 export interface ApplyResult {
   graph: EventGraph;
@@ -24,7 +25,7 @@ function nextChangeId(graph: EventGraph): string {
 
 /**
  * Writes the approved change back to the graph:
- *  1. move the session to the new venue
+ *  1. move the session to its proposed state
  *  2. create the approved follow-up tasks
  *  3. append a linked change log entry
  *
@@ -37,6 +38,11 @@ export function applyChange(
   options: ApplyOptions = {},
 ): ApplyResult {
   const report = computeImpact(graph, change);
+  const session = graph.sessions.find((item) => item.id === change.sessionId);
+  if (!session) throw new Error(`Unknown session: ${change.sessionId}`);
+
+  const proposed = proposedSession(session, change);
+
   const selected =
     options.selectedFollowUpIds && options.selectedFollowUpIds.length > 0
       ? report.followUps.filter((followUp) =>
@@ -64,8 +70,9 @@ export function applyChange(
     changeType: change.changeType,
     eventId: change.eventId,
     sessionId: change.sessionId,
-    fromVenueId: report.fromVenueId,
-    toVenueId: change.newVenueId,
+    changeLabel: report.changeLabel,
+    fromVenueId: change.changeType === "venue_change" ? session.venueId : undefined,
+    toVenueId: change.changeType === "venue_change" ? change.newVenueId : undefined,
     reason: change.reason,
     affectedRecordIds: report.affected.map((record) => record.id),
     followUpTaskIds: nextTasks.map((task) => task.id),
@@ -76,10 +83,8 @@ export function applyChange(
 
   const nextGraph: EventGraph = {
     ...graph,
-    sessions: graph.sessions.map((session) =>
-      session.id === change.sessionId
-        ? { ...session, venueId: change.newVenueId }
-        : session,
+    sessions: graph.sessions.map((item) =>
+      item.id === change.sessionId ? proposed : item,
     ),
     tasks: [...graph.tasks, ...nextTasks],
     changeLog: [...graph.changeLog, entry],

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getSource } from "@/lib/data/source";
 import { ROLES, type Role } from "@/lib/domain/types";
 import { formatDateTime, roleLabel } from "@/lib/format";
+import { Card, Chip, Empty, PageHeader, SectionTitle, Stat } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -26,29 +27,21 @@ export default async function RolesPage({
     graph.sessions.find((session) => session.id === id)?.title ?? "Event-wide";
 
   return (
-    <div className="space-y-6">
-      <header>
-        <p className="text-xs uppercase tracking-widest text-cyan-400">
-          Step 6 · role briefing
-        </p>
-        <h1 className="mt-1 text-3xl font-semibold text-slate-50">
-          Who owns what now
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm text-slate-400">
-          Role-specific interfaces over the same approved records. These views
-          filter by role; they are not access-controlled (see the demo non-claims).
-        </p>
-      </header>
+    <div className="space-y-10">
+      <PageHeader eyebrow="Role briefing" title="Who owns what now">
+        Role-specific interfaces over the same approved records. These views filter
+        by role; they are not access-controlled (see the demo non-claims).
+      </PageHeader>
 
       <nav className="flex flex-wrap gap-2">
         {ROLES.map((item) => (
           <Link
             key={item}
             href={`/roles?role=${item}`}
-            className={`rounded-md border px-3 py-2 text-sm transition ${
+            className={`rounded-full border px-3.5 py-1.5 text-sm transition-colors ${
               item === role
-                ? "border-cyan-500/60 bg-cyan-500/10 text-cyan-200"
-                : "border-slate-800 text-slate-300 hover:bg-slate-800"
+                ? "border-accent/40 bg-accent-soft text-accent-ink"
+                : "border-line-strong bg-surface text-muted hover:text-ink"
             }`}
           >
             {roleLabel(item)}
@@ -56,84 +49,80 @@ export default async function RolesPage({
         ))}
       </nav>
 
-      <section className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
-          <div className="text-xs uppercase tracking-wider text-slate-500">Owned</div>
-          <div className="mt-1 text-2xl font-semibold text-slate-100">
-            {owned.length}
-          </div>
-        </div>
-        <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
-          <div className="text-xs uppercase tracking-wider text-slate-500">Open</div>
-          <div className="mt-1 text-2xl font-semibold text-slate-100">{open.length}</div>
-        </div>
-        <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
-          <div className="text-xs uppercase tracking-wider text-slate-500">
-            Blockers
-          </div>
-          <div className="mt-1 text-2xl font-semibold text-slate-100">
-            {blockers.length}
-          </div>
-        </div>
-      </section>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Stat label="Owned" value={owned.length} />
+        <Stat label="Open" value={open.length} />
+        <Stat label="Blockers" value={blockers.length} />
+      </div>
 
-      <section className="rounded-lg border border-slate-800 bg-slate-900/60 p-5">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
+      <Card>
+        <SectionTitle meta={`${owned.length} tasks`}>
           {roleLabel(role)} tasks
-        </h2>
-        <ul className="mt-4 space-y-3">
+        </SectionTitle>
+        <ul className="mt-5 space-y-4">
           {owned.map((task) => (
             <li
               key={task.id}
-              className="flex items-start justify-between gap-4 border-b border-slate-800 pb-3 last:border-0 last:pb-0"
+              className="flex items-start justify-between gap-5 border-b border-line pb-4 last:border-0 last:pb-0"
             >
-              <div>
-                <div className="text-sm text-slate-100">{task.title}</div>
-                <div className="text-xs text-slate-500">
+              <div className="min-w-0">
+                <div className="text-sm text-ink">{task.title}</div>
+                <div className="mt-0.5 text-xs text-faint">
                   {sessionTitle(task.sessionId)} · due {formatDateTime(task.dueAt)}
                   {task.sourceChangeId ? ` · from ${task.sourceChangeId}` : ""}
                 </div>
               </div>
-              <span
-                className={`rounded-full px-2 py-1 text-xs ${
+              <Chip
+                tone={
                   task.status === "done"
-                    ? "bg-emerald-500/15 text-emerald-200"
+                    ? "success"
                     : task.status === "blocked"
-                      ? "bg-rose-500/15 text-rose-200"
-                      : "bg-slate-800 text-slate-300"
-                }`}
+                      ? "danger"
+                      : "neutral"
+                }
               >
                 {task.status.replace("_", " ")}
-              </span>
+              </Chip>
             </li>
           ))}
           {owned.length === 0 && (
-            <li className="text-sm text-slate-500">
-              No tasks currently owned by this role.
+            <li>
+              <Empty>No tasks currently owned by this role.</Empty>
             </li>
           )}
         </ul>
-      </section>
+      </Card>
 
-      <section className="rounded-lg border border-slate-800 bg-slate-900/60 p-5">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-300">
+      <Card>
+        <SectionTitle meta={`${recentChanges.length} recent`}>
           Recent approved changes
-        </h2>
+        </SectionTitle>
         {recentChanges.length === 0 ? (
-          <p className="mt-3 text-sm text-slate-500">
-            No changes recorded yet. Apply one in the Change Console.
-          </p>
+          <div className="mt-5">
+            <Empty>
+              No changes recorded yet. Apply one in the{" "}
+              <Link href="/change" className="text-accent underline">
+                change console
+              </Link>
+              .
+            </Empty>
+          </div>
         ) : (
-          <ul className="mt-4 space-y-3">
+          <ul className="mt-5 space-y-5">
             {recentChanges.map((entry) => (
-              <li key={entry.id} className="border-l-2 border-cyan-500/60 pl-4">
-                <div className="font-mono text-xs text-cyan-300">{entry.id}</div>
-                <p className="mt-1 text-sm text-slate-300">{entry.summary}</p>
+              <li key={entry.id} className="border-l-2 border-accent/50 pl-5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-mono text-xs text-accent">{entry.id}</span>
+                  <span className="text-xs text-faint">{entry.changeLabel}</span>
+                </div>
+                <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">
+                  {entry.summary}
+                </p>
               </li>
             ))}
           </ul>
         )}
-      </section>
+      </Card>
     </div>
   );
 }

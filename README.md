@@ -6,6 +6,11 @@ One scenario runs end to end:
 
 **Plan → detect dependencies → preview impact → assign follow-ups → approve and sync → brief each role → capture lessons**
 
+Four change types run through the same graph, the same rule registry, and the
+same change log: **venue**, **time**, **resource**, and **person** changes.
+Where a role is left uncovered, the engine proposes ranked candidates for a human
+to accept; it never reassigns on its own.
+
 ## The reference demo
 
 An organizer changes the main auditorium two hours before the event.
@@ -101,7 +106,8 @@ tests/               Engine, Notion mapping, and report unit tests
 
 ## Documentation
 
-- [docs/implementation-plan.md](docs/implementation-plan.md) — **phased build plan and the next step**
+- [**CHECKOUT.md**](CHECKOUT.md) — **how to run, tour, and verify everything**
+- [docs/implementation-plan.md](docs/implementation-plan.md) — phased build plan
 - [docs/notion-setup.md](docs/notion-setup.md) — connect a real workspace in four steps
 - [docs/PRD.md](docs/PRD.md) — problem, users, requirements, acceptance criteria
 - [docs/architecture.md](docs/architecture.md) — components and decisions

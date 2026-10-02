@@ -62,10 +62,13 @@ export async function applyToWorkspace(
   );
   const sessionPageId = resolve("sessions", result.entry.sessionId);
   if (session && sessionPageId) {
-    const sessionProps = sessionToProperties(session, resolve);
+    // Write the whole session record, not just one field: a change can move the
+    // venue, the time, the equipment, or the people. One page update either way.
     await client.pages.update({
       page_id: sessionPageId,
-      properties: { Venue: sessionProps.Venue } as UpdatePageArgs["properties"],
+      properties: asProperties(
+        sessionToProperties(session, resolve),
+      ) as unknown as UpdatePageArgs["properties"],
     });
   }
 

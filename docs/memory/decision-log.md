@@ -158,3 +158,60 @@
 
 - Phase 3 preparation: spec 0002 (multi change types) written; implementation not
   started.
+
+## 2026-10-02 — Phases 3 to 6
+
+### Decisions
+
+- **D-023** `ChangeRequest` is a discriminated union, not one wide type with
+  optional fields. *Why:* optional fields let a builder forget a required input
+  and still compile. The union makes that impossible, and `proposedSession()`
+  turns any variant into a single session view so rules never branch on type.
+- **D-024** Rules live in a registry (`lib/engine/rules/`), one file per concern,
+  each declaring `appliesTo`. *Why:* the venue-change rules were one inline
+  function; four change types would have made it one long switch. Adding a rule
+  is now one file plus one line.
+- **D-025** Every rule receives `{ current, proposed, index, change }` and reads
+  only `proposed`. *Why:* keeps rules pure and comparable across change types.
+- **D-026** Conflict carries an optional `ownerRole`. *Why:* follow-up planning
+  needs an owner, and encoding it on the conflict removes a duplicate mapping
+  table. Severity stays on the conflict; the lead time map stays in follow-ups.
+- **D-027** Non-venue changes leave `fromVenueId`/`toVenueId` empty and carry a
+  `changeLabel` string instead. *Why:* avoids a Notion schema migration, and the
+  label is what the UI actually wants to show.
+- **D-028** `notion:setup` reconciles schema drift: it adds properties and select
+  options declared in the schema but missing in Notion, and never removes
+  anything. *Why:* the live workspace already existed; without this, adding a
+  change type would require destroying the workspace.
+- **D-029** Notion write-back updates the whole session record, not just the
+  changed field. *Why:* caught live. The first implementation only updated
+  `Venue`, so a time change silently did not persist. One page update either way.
+- **D-030** Phase 4 is deliberately lean: ranked candidate proposals marked
+  "proposed, not assigned", never automatic reassignment. *Why:* the brief marks
+  automatic reassignment as a stretch goal, and auto-assigning people is exactly
+  the kind of action that should stay human-approved.
+- **D-031** Design system is Anthropic-inspired: Pampas paper `#F4F3EE`, Crail
+  terracotta `#C15F3C`, warm greys, serif display against a system sans, φ-derived
+  type steps. *Why:* owner request; calm and editorial rather than dashboard-dark.
+- **D-032** CI runs typecheck, tests, and build with `KINETEX_SOURCE=local`.
+  *Why:* no credentials should be required to verify the repo.
+
+### Verification (measured)
+
+- `bun test` → 32 pass, 0 fail (engine 8, multi-change 12, Notion mapping 8,
+  report 4).
+- `bunx tsc --noEmit` → clean. `bun run build` → 9 routes.
+- Live Notion: `notion:setup` reconciled 2 schema changes (Type options + Change
+  property); `notion:reset` + `notion:seed` restored 26 pages; applying a **time
+  change** wrote `chg-001` with 7 tasks and 4 conflicts, and the re-read showed
+  the session's start/end persisted.
+
+### Blockers
+
+- **B-002 (open)** No deploy yet (Vercel needs owner auth). CI is in place.
+- **B-003 (open)** Notion webhooks not built; the non-claim stands.
+
+### Next
+
+- Deploy to Vercel when the owner is ready, then wire a webhook receiver with
+  signature verification and idempotency.

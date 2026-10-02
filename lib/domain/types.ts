@@ -26,6 +26,7 @@ export const ROLES: Role[] = [
 
 export type EquipmentStatus = "available" | "in_use" | "maintenance";
 export type TaskStatus = "todo" | "in_progress" | "done" | "blocked";
+export type SessionStatus = "scheduled" | "rescheduled" | "cancelled";
 
 export interface EventRecord {
   id: string;
@@ -90,8 +91,11 @@ export interface ChangeLogEntry {
   changeType: ChangeType;
   eventId: string;
   sessionId: string;
-  fromVenueId: string;
-  toVenueId: string;
+  /** Human readable summary of what changed, e.g. "Main Auditorium → Hall B". */
+  changeLabel: string;
+  /** Present only for venue changes. */
+  fromVenueId?: string;
+  toVenueId?: string;
   reason?: string;
   affectedRecordIds: string[];
   followUpTaskIds: string[];
@@ -117,22 +121,71 @@ export interface EventGraph {
   changeLog: ChangeLogEntry[];
 }
 
-/** MVP supports one change type end to end, then widens if time remains. */
-export type ChangeType = "venue_change";
+// ── Change model ───────────────────────────────────────────────────────────
 
-export interface ChangeRequest {
-  changeType: ChangeType;
+export type ChangeType =
+  | "venue_change"
+  | "time_change"
+  | "resource_change"
+  | "person_change";
+
+export const CHANGE_TYPES: ChangeType[] = [
+  "venue_change",
+  "time_change",
+  "resource_change",
+  "person_change",
+];
+
+export const CHANGE_TYPE_LABELS: Record<ChangeType, string> = {
+  venue_change: "Venue change",
+  time_change: "Time change",
+  resource_change: "Resource change",
+  person_change: "Person change",
+};
+
+interface ChangeBase {
   eventId: string;
   sessionId: string;
-  newVenueId: string;
   reason?: string;
 }
+
+export interface VenueChange extends ChangeBase {
+  changeType: "venue_change";
+  newVenueId: string;
+}
+
+export interface TimeChange extends ChangeBase {
+  changeType: "time_change";
+  newStart: string;
+  newEnd: string;
+}
+
+export interface ResourceChange extends ChangeBase {
+  changeType: "resource_change";
+  addEquipmentIds: string[];
+  removeEquipmentIds: string[];
+}
+
+export interface PersonChange extends ChangeBase {
+  changeType: "person_change";
+  addPersonIds: string[];
+  removePersonIds: string[];
+}
+
+/** A discriminated union: optional fields on one wide type is the bug shape. */
+export type ChangeRequest =
+  | VenueChange
+  | TimeChange
+  | ResourceChange
+  | PersonChange;
+
+// ── Impact ─────────────────────────────────────────────────────────────────
 
 export interface AffectedRecord {
   id: string;
   entity: keyof EventGraph;
   label: string;
-  /** How this record connects to the changed session. */
+  /** How this record connects to the changed record. */
   relation: string;
 }
 
@@ -144,6 +197,8 @@ export interface Conflict {
   kind: string;
   message: string;
   recordIds: string[];
+  /** Role that should own the fix, if the rule knows one. */
+  ownerRole?: Role;
 }
 
 export interface ProposedFollowUp {
@@ -154,6 +209,8 @@ export interface ProposedFollowUp {
   dueAt: string;
   reason: string;
   relatedRecordIds: string[];
+  /** Optional named candidates, proposed for a human to accept. Never applied. */
+  candidatePersonIds?: string[];
 }
 
 /**
@@ -170,7 +227,8 @@ export interface GeneratedSummary {
 
 export interface ImpactReport {
   change: ChangeRequest;
-  fromVenueId: string;
+  /** Human readable "what will change" line. */
+  changeLabel: string;
   affected: AffectedRecord[];
   conflicts: Conflict[];
   followUps: ProposedFollowUp[];

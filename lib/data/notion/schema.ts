@@ -58,7 +58,12 @@ export const ROLE_OPTIONS = [
 export const STATUS_OPTIONS = ["planned", "in_planning", "live", "closed"] as const;
 export const EQUIPMENT_STATUS_OPTIONS = ["available", "in_use", "maintenance"] as const;
 export const TASK_STATUS_OPTIONS = ["todo", "in_progress", "done", "blocked"] as const;
-export const CHANGE_TYPE_OPTIONS = ["venue_change"] as const;
+export const CHANGE_TYPE_OPTIONS = [
+  "venue_change",
+  "time_change",
+  "resource_change",
+  "person_change",
+] as const;
 
 /** Every database gets this, so domain ids survive a round trip. */
 export const DOMAIN_ID_PROPERTY = "Domain ID";
@@ -158,6 +163,7 @@ export const NOTION_SCHEMA: DatabaseSpec[] = [
       { name: "Id", kind: "title" },
       domainId,
       { name: "Type", kind: "select", options: [...CHANGE_TYPE_OPTIONS] },
+      { name: "Change", kind: "rich_text" },
       { name: "Event", kind: "relation", relatesTo: "events" },
       { name: "Session", kind: "relation", relatesTo: "sessions" },
       { name: "From Venue", kind: "relation", relatesTo: "venues" },

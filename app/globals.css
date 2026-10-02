@@ -1,7 +1,52 @@
 @import "tailwindcss";
 
-:root {
-  color-scheme: dark;
+/*
+ * Kinetex LiveOps design system.
+ *
+ * Palette: Anthropic/Claude — Pampas paper #F4F3EE, Crail terracotta #C15F3C,
+ * Cloudy warm grey, near-black ink. Warm, calm, editorial.
+ *
+ * Type: serif display (the Claude feel) against a system sans for UI text.
+ * Scale is a golden-ratio (φ ≈ 1.618) progression off a 16px base:
+ *   16 → 25.9 → 41.9  (rounded to 1rem / 1.618rem / 2.618rem)
+ * Spacing uses an 8px rhythm with φ-sized section gaps.
+ */
+@theme {
+  --color-paper: #faf9f5;
+  --color-paper-deep: #f4f3ee;
+  --color-surface: #ffffff;
+  --color-ink: #1f1e1c;
+  --color-ink-soft: #45433e;
+  --color-muted: #6f6b63;
+  --color-faint: #9a958a;
+  --color-line: #e7e3d9;
+  --color-line-strong: #d8d3c6;
+
+  --color-accent: #c15f3c;
+  --color-accent-hover: #a94f2f;
+  --color-accent-soft: #f7ebe5;
+  --color-accent-ink: #8b3f22;
+
+  --color-success: #4f6b45;
+  --color-success-soft: #eef2ea;
+  --color-warning: #9d7420;
+  --color-warning-soft: #f8f1e1;
+  --color-danger: #a8402f;
+  --color-danger-soft: #f9eae6;
+  --color-info: #45657a;
+  --color-info-soft: #ecf1f4;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, ui-serif, Georgia,
+    "Times New Roman", serif;
+
+  --text-display: 2.618rem;
+  --text-display--line-height: 1.15;
+  --text-title: 1.618rem;
+  --text-title--line-height: 1.25;
+
+  --radius-card: 0.875rem;
 }
 
 html,
@@ -10,6 +55,27 @@ body {
 }
 
 body {
-  background-color: #020617;
-  color: #e2e8f0;
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+/* A hairline that reads as paper, not as a UI divider. */
+.rule {
+  border-color: var(--color-line);
+}
+
+::selection {
+  background: var(--color-accent-soft);
+  color: var(--color-accent-ink);
 }
