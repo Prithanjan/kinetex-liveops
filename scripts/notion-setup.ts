@@ -11,26 +11,24 @@ import { Client } from "@notionhq/client";
 import { requireNotionConfig } from "../lib/data/notion/config";
 import { NOTION_SCHEMA } from "../lib/data/notion/schema";
 
-type AnyBlock = Record<string, unknown>;
-
 /** A callout block that Notion's API accepts: colour + bold title + plain sub-note. */
 const tableGuideBlock = (spec: { title: string; description: string; icon: string }) => ({
-  object: "block" as const,
-  type: "callout" as const,
+  object: "block",
+  type: "callout",
   callout: {
     rich_text: [
       {
-        type: "text" as const,
+        type: "text",
         text: { content: `${spec.title} — ${spec.description}` },
         annotations: { bold: true },
       },
       {
-        type: "text" as const,
+        type: "text",
         text: { content: "Read the status column first: it tells you what is going on. Everything else is a detail under that." },
       },
     ],
-    icon: { type: "emoji" as const, emoji: spec.icon },
-    color: "gray_background" as const,
+    icon: { type: "emoji", emoji: spec.icon },
+    color: "gray_background",
   },
 });
 
@@ -51,22 +49,13 @@ async function main() {
     const hasStatus = Boolean(status?.type === "select" && status.select?.options?.length);
 
     // A note under a database: bold title, plain sub-note in the section colour.
-    const note: AnyBlock = {
+    const note = {
       object: "block",
       type: "callout",
       callout: {
         rich_text: [
-          {
-            type: "text",
-            text: { content: `${spec.title} — ${spec.description}` },
-            annotations: { bold: true },
-          },
-          {
-            type: "text",
-            text: {        content:
-          spec.purpose + " Read the status column first: it tells you what is going on. Everything else is a detail under that."
-            },
-          },
+          { type: "text", text: { content: `${spec.title} — ${spec.description}` }, annotations: { bold: true } },
+          { type: "text", text: { content: "Read the status column first: it tells you what is going on. Everything else is a detail under that." } },
         ],
         icon: { type: "emoji", emoji: spec.icon },
         color: "gray_background",
