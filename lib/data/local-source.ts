@@ -1,6 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { EventGraph } from "@/lib/domain/types";
+import type { ApplyResult } from "@/lib/engine/apply";
 import type { EventSource } from "./source";
 
 const SEED_PATH = path.join(process.cwd(), "data", "seed", "event-graph.json");
@@ -32,6 +33,10 @@ export const localSource: EventSource = {
       return readJson<EventGraph>(RUNTIME_PATH);
     }
     return readJson<EventGraph>(SEED_PATH);
+  },
+
+  async applyApprovedChange(result: ApplyResult): Promise<void> {
+    await localSource.writeGraph(result.graph);
   },
 
   async writeGraph(graph: EventGraph): Promise<void> {

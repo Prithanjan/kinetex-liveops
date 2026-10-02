@@ -25,13 +25,25 @@
 - Nothing is written before a human approval that names the approving role.
 - Runtime state stays out of git (`data/runtime/`, `.env.local`).
 
-## Current baseline (2026-10-02, commit `bde2178`)
+## Current baseline (2026-10-02)
 
-Built and verified: typed event graph, local source, Notion adapter interface
+At commit `bde2178`: typed event graph, local source, Notion adapter interface
 (placeholder), impact engine (traversal + 6 rules + follow-ups + summary),
 approval write-back, 4 API routes, 3 screens, 8 passing tests, full docs.
-Not built: real Notion mapping, post-event report, extra change types,
-reassignment, webhooks, auth, CI, deploy.
+
+Since then (Phase 1 code + Phase 2):
+
+- **Phase 1 code complete, live verification pending.** Notion schema is a
+  single source of truth (`lib/data/notion/schema.ts`); `bun run notion:setup`
+  creates all 8 databases and writes ids to `.env.local`;
+  `bun run notion:seed` / `:reset` populate and clear the demo. Read and
+  incremental write paths are built and the pure mapping is unit-tested.
+  Remaining: run it against a real workspace (needs the owner's token and one
+  shared page), then retire the placeholder non-claim. See
+  [docs/notion-setup.md](notion-setup.md).
+- **Phase 2 complete.** Post-event report builder, `/api/report`, `/report`
+  screen, lessons derived from persisted conflicts, tests.
+- 20 tests passing across engine, Notion mapping, and report.
 
 ## How to use this plan
 
@@ -40,15 +52,15 @@ reassignment, webhooks, auth, CI, deploy.
 3. Phases 3–5 are breadth. Do not start them before Phase 1 or 2 is done.
 4. Phase 6 is the delivery gate. Nothing ships without it.
 
-| Phase | Theme | Blocked on owner? | Order |
-|---|---|---|---|
-| 0 | Notion workspace + prerequisites | **Yes** | First, or parallel |
-| 1 | Real Notion source (read + write) | Yes | After 0 |
-| 2 | Post-event report + lesson compiler | No | Any time |
-| 3 | More change types | No | After 1 or 2 |
-| 4 | Volunteer reassignment | No | After 3 |
-| 5 | Webhooks, deploy, CI, hardening | Partly | After 1 |
-| 6 | Demo, rehearsal, release | No | Last |
+| Phase | Theme | Blocked on owner? | Order | Status |
+|---|---|---|---|---|
+| 0 | Notion workspace + prerequisites | **Yes** | First, or parallel | waiting on owner |
+| 1 | Real Notion source (read + write) | Yes | After 0 | code done, live verification pending |
+| 2 | Post-event report + lesson compiler | No | Any time | **done** |
+| 3 | More change types | No | After 1 or 2 | not started |
+| 4 | Volunteer reassignment | No | After 3 | not started |
+| 5 | Webhooks, deploy, CI, hardening | Partly | After 1 | not started |
+| 6 | Demo, rehearsal, release | No | Last | not started |
 
 ---
 

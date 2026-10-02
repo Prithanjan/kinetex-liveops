@@ -97,6 +97,12 @@ export interface ChangeLogEntry {
   followUpTaskIds: string[];
   approvedByRole: Role;
   summary: string;
+  /**
+   * Conflicts found at preview time, persisted so the post-event report can
+   * derive lessons from what was actually detected, not a re-computation.
+   * Optional so older entries stay valid.
+   */
+  conflicts?: Conflict[];
 }
 
 /** The full working set. Notion holds the same entities as pages/databases. */

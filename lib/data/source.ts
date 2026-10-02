@@ -1,4 +1,5 @@
 import type { EventGraph } from "@/lib/domain/types";
+import type { ApplyResult } from "@/lib/engine/apply";
 
 /**
  * One interface, two implementations. The engine never knows whether the
@@ -7,6 +8,12 @@ import type { EventGraph } from "@/lib/domain/types";
 export interface EventSource {
   readonly kind: "local" | "notion";
   readGraph(): Promise<EventGraph>;
+  /**
+   * Persist an approved change. Local rewrites its stored graph; Notion updates
+   * only the affected pages instead of rewriting the whole workspace.
+   */
+  applyApprovedChange(result: ApplyResult): Promise<void>;
+  /** Full-graph write, used only to populate a source initially. */
   writeGraph(graph: EventGraph): Promise<void>;
 }
 

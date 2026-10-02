@@ -9,7 +9,10 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "bun test"
+    "test": "bun test",
+    "notion:setup": "bun run scripts/notion-setup.ts",
+    "notion:seed": "bun run scripts/notion-seed.ts",
+    "notion:reset": "bun run scripts/notion-reset.ts"
   },
   "dependencies": {
     "@notionhq/client": "^2.2.15",

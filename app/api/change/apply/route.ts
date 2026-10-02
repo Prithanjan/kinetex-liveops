@@ -38,14 +38,11 @@ export async function POST(request: Request) {
   const graph = await source.readGraph();
 
   try {
-    const { graph: nextGraph, entry, report } = applyChange(
-      graph,
-      body.change,
-      approvedByRole as Role,
-      { selectedFollowUpIds },
-    );
-    await source.writeGraph(nextGraph);
-    return NextResponse.json({ source: source.kind, entry, report });
+    const result = applyChange(graph, body.change, approvedByRole as Role, {
+      selectedFollowUpIds,
+    });
+    await source.applyApprovedChange(result);
+    return NextResponse.json({ source: source.kind, entry: result.entry, report: result.report });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Apply failed." },

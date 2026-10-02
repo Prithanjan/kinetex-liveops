@@ -27,6 +27,11 @@ bun run dev
 bun run typecheck
 bun test
 bun run build
+
+# Notion workspace automation (needs NOTION_TOKEN + NOTION_PARENT_PAGE_ID in .env.local)
+bun run notion:setup   # create the 8 databases, write ids to .env.local
+bun run notion:seed    # populate the demo event
+bun run notion:reset   # archive all pages for a clean re-seed
 ```
 
 ## Conventions
@@ -50,6 +55,9 @@ bun run build
 | Domain model | `lib/domain/types.ts` |
 | Engine | `lib/engine/*` |
 | Sources | `lib/data/*` |
+| Notion schema (single source of truth) | `lib/data/notion/schema.ts` |
+| Notion read/write | `lib/data/notion/*` |
+| Notion scripts | `scripts/notion-*.ts` |
 | API | `app/api/*` |
 | UI | `app/*`, `components/*` |
 | Seed graph | `data/seed/event-graph.json` |
@@ -58,7 +66,10 @@ bun run build
 
 ## Non-claims (do not contradict these)
 
-- Notion adapter mapping is not implemented; demo runs on local seed.
+- Notion mapping is implemented and unit-tested but **not yet verified against a
+  live workspace**. Until it is, say "mapping implemented, live verification
+  pending". Do not claim live sync.
+- Never receive the Notion token in chat. The owner sets it in `.env.local`.
 - The summary is rules-based, not an LLM call.
 - Role views are not access-controlled.
 - No measured operational improvement is claimed.

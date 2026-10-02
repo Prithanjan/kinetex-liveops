@@ -12,6 +12,7 @@ const nav = [
   { href: "/", label: "Dashboard" },
   { href: "/change", label: "Change Console" },
   { href: "/roles", label: "Role Views" },
+  { href: "/report", label: "Report" },
 ];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -108,11 +108,35 @@ integration. Set `NOTION_TOKEN` and `KINETEX_SOURCE=notion`.
 | People | `people` | Name (title), Roles (multi-select), Skills (multi-select) |
 | Participant Groups | `participantGroups` | Name (title), Size (number) |
 | Tasks | `tasks` | Title (title), Owner Role (select), Owner (relation → People), Session (relation), Status (select), Due (date), Source Change (relation → Change Log) |
-| Change Log | `changeLog` | Title (id), Type (select), Event/Session/Venue (relations), Affected Records (text), Follow-up Tasks (relation), Approved By (select), Summary (text), Created (date) |
+| Change Log | `changeLog` | Id (title), Type (select), Event/Session/From Venue/To Venue (relations), Reason (text), Affected Records (text), Follow-up Task IDs (text), Conflicts (text, JSON), Approved By (select), Summary (text), Created (date) |
 
-> **Status: placeholder.** The mapping above is the target, not implemented
-> behavior. `lib/data/notion-source.ts` fails loudly until it is built. No part
-> of this project claims live Notion synchronization today.
+Two deliberate additions to the brief's schema:
+
+- **Domain ID** (rich text) on every database. It carries the domain id
+  (`ses-keynote`) so write-back can find and update the exact page without
+  matching on the human title.
+- **Conflicts** (rich text, JSON) on Change Log. The conflicts detected at
+  preview time are persisted with the approved change, so the post-event report
+  derives lessons from what was actually found rather than re-computing against
+  an already-moved graph.
+
+Change Log keeps follow-up task ids as text rather than a relation, because
+`Tasks.Source Change` already relates to Change Log and a back-relation would
+create a cycle.
+
+> **Status: implemented, pending live verification.** The mapping above is built
+> (`lib/data/notion/*`) and `scripts/notion-setup.ts` creates the databases from
+> `lib/data/notion/schema.ts`. Read and write paths are unit-tested against
+> fixtures; they have not yet been run against a real workspace. Until they have,
+> do not claim live sync: the honest statement is "mapping implemented, live
+> verification pending". See [docs/notion-setup.md](notion-setup.md).
+
+### 3.1 Automation
+
+Do not create these databases by hand. Run `bun run notion:setup`, which builds
+all eight from the schema, then `bun run notion:seed` to populate the demo. See
+[docs/notion-setup.md](notion-setup.md) for the four manual steps (integration,
+one shared page, two env values, one command).
 
 ## 4. Cardinality notes
 

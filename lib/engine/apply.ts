@@ -71,6 +71,7 @@ export function applyChange(
     followUpTaskIds: nextTasks.map((task) => task.id),
     approvedByRole,
     summary: report.summary.text,
+    conflicts: report.conflicts,
   };
 
   const nextGraph: EventGraph = {

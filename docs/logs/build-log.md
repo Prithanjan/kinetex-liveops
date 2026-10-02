@@ -56,3 +56,42 @@ documented repository, and push it.
 
 Repository initialized, tracer bullet running end to end, docs complete,
 pushed to GitHub.
+
+## 2026-10-02 — 02: Notion automation + Phase 2 report
+
+**Goal:** remove manual Notion setup so the agent can do everything itself once
+the owner supplies credentials, and complete Phase 2.
+
+**Built**
+
+- `lib/data/notion/schema.ts` — the 8 databases as a single source of truth,
+  shared by setup, read, and write.
+- `lib/data/notion/config.ts` — env validation that lists every missing var at once.
+- `lib/data/notion/mapping.ts` — pure page-to-entity and entity-to-property
+  mapping, with `Domain ID` carried on every page.
+- `lib/data/notion/read.ts` — full workspace read with pagination and relation
+  page-id to domain-id translation.
+- `lib/data/notion/write.ts` — incremental write-back: create the change log
+  page, create the change's task pages, update the moved session's Venue relation.
+- `scripts/notion-setup.ts` — creates all 8 databases, writes ids + `KINETEX_SOURCE`
+  into `.env.local`. Safe to re-run.
+- `scripts/notion-seed.ts` — populates the workspace from the seed graph, idempotent.
+- `scripts/notion-reset.ts` — archives all pages for a clean re-seed.
+- `EventSource.applyApprovedChange` added; local implements it; apply route uses it.
+- `ChangeLogEntry.conflicts` persisted (Notion `Conflicts` property).
+- Phase 2: `lib/engine/report.ts`, `/api/report`, `/report` screen, nav link.
+- Docs: `docs/notion-setup.md`; updated data-model, implementation-plan,
+  decision-log, README, AGENTS.
+
+**Verification**
+
+- `bun test` → 20 pass, 0 fail (engine 8, Notion mapping 8, report 4).
+- `bunx tsc --noEmit` → clean.
+- `bun run build` → compiled; 9 routes.
+- Smoke test: new apply path wrote `chg-001` (7 tasks, 4 recorded conflicts);
+  `/api/report` returned 1 change and 4 lessons; reset restored the seed.
+
+**Result**
+
+Phase 2 done. Phase 1 code complete; live Notion verification pending the owner's
+credentials. Repo pushed.
