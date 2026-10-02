@@ -215,3 +215,52 @@
 
 - Deploy to Vercel when the owner is ready, then wire a webhook receiver with
   signature verification and idempotency.
+
+## 2026-10-03 — Design pass (user-facing)
+
+Redesigned everything a person touches, from the Notion workspace down to the
+motor. How it turned out, what blocked it, what is still settled.
+
+### Decisions
+
+- **D-033** Two Notion pages: a home page the person opens first, and the
+  database page styled as an index. *Why:* the original parent page was a flat
+  list with no hook. Notion's API cannot create views or reorder blocks, so the
+  two-page structure is the cleanest way to lead with a designed page.
+- **D-034** Every database gets an icon, a description, a caption, and a reading
+  guide naming the column that carries the meaning. *Why:* the user asked for
+  distinction; with no API views available, per-database prose is the lever that
+  works. Group them into four colour-coded sections so the list breathes.
+- **D-035** Display correctness over developer convenience on the screens. Raw
+  ids, relation keys, entity names, and `source.kind` chips are gone from the UI;
+  every number is a count or a name a person already knows.
+- **D-036** Charts as plain SVG: a progress ring for completion, a bar series for
+  load and capacity, a radial blast-radius graph for impact. *Why:* no chart
+  library, no external images, and the shapes are smaller than the data they
+  show.
+- **D-037** Cut repeated chrome by roughly a third: stat strips that repeated
+  numbers already on the page were removed, and long explainers were shortened
+  to one line. *Why:* the same card and stat pattern repeated on every page;
+  the pages should read as four distinct documents.
+
+### Resolved unknowns
+
+- `after` anchoring works reliably on database blocks but not on newly created
+  blocks. All Notion content is appended after database blocks, so re-runs stay
+  clean.
+- Notion's API rejects recolouring existing select options. Colours only land on
+  a fresh workspace; `notion:setup` prints the exact manual list for the rest.
+
+### Deviations
+
+- The user asked for board/gallery/calendar/timeline views. Not available via
+  the API, so the reading guides stand in for them. A one-time manual layout in
+  Notion is the only way to get those view types. Star the repo if you want that
+  feature; it is on the roadmap's stretch list.
+
+### Next
+
+- Tame the web app screens: the four pages should read like four different
+  documents, not four instances of the same layout.
+- Add per-database columns that carry meaning on every row, without needing a
+  second setup run.

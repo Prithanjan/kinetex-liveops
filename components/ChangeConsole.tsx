@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type {
   ChangeLogEntry,
@@ -10,20 +11,31 @@ import type {
   ImpactReport,
   Role,
 } from "@/lib/domain/types";
-import { CHANGE_TYPE_LABELS, CHANGE_TYPES, ROLES } from "@/lib/domain/types";
-import { roleLabel } from "@/lib/format";
+import { CHANGE_TYPES, ROLES } from "@/lib/domain/types";
 import {
-  Card,
-  Callout,
-  Chip,
-  Empty,
-  SectionTitle,
-  Steps,
-  severityIcon,
-  severityTone,
+  count,
+  entityLabel,
+  formatDateTime,
+  relationLabel,
+  roleLabel,
+  ROLE_BLURBS,
+  severityLabel,
   titleCase,
-} from "@/components/ui";
-import { IconRoute, IconSparkle, IconCheck } from "@/components/icons";
+} from "@/lib/format";
+import { Callout, Card, CardBody, Chip, SectionTitle, toneFor } from "@/components/ui";
+import { BlastRadius, type BlastNode } from "@/components/charts";
+import {
+  IconAlert,
+  IconArrow,
+  IconBox,
+  IconCheck,
+  IconClock,
+  IconInfo,
+  IconPin,
+  IconSparkle,
+  IconUsers,
+  IconWarn,
+} from "@/components/icons";
 
 const IST = "Asia/Kolkata";
 
@@ -44,9 +56,58 @@ function fromLocalInput(value: string): string {
   return `${value}:00+05:30`;
 }
 
+/** Cards, not a dropdown: what a person is about to change should be obvious. */
+const CHANGE_CARDS: {
+  type: ChangeType;
+  icon: (props: { className?: string }) => React.ReactElement;
+  blurb: string;
+}[] = [
+  {
+    type: "venue_change",
+    icon: IconPin,
+    blurb: "A session moves to a different room.",
+  },
+  {
+    type: "time_change",
+    icon: IconClock,
+    blurb: "A session starts later, or runs longer.",
+  },
+  {
+    type: "resource_change",
+    icon: IconBox,
+    blurb: "Kit is added to a session, or taken away.",
+  },
+  {
+    type: "person_change",
+    icon: IconUsers,
+    blurb: "Someone joins the crew, or has to step back.",
+  },
+];
+
+/** Short labels for the blast-radius graph: what kind of thing is this. */
+const ENTITY_KIND: Record<string, string> = {
+  sessions: "Session",
+  venues: "Venue",
+  equipment: "Kit",
+  people: "Crew",
+  participantGroups: "Guests",
+  tasks: "Task",
+  events: "Event",
+  changeLog: "Change",
+};
+
+const ENTITY_TONE: Record<string, BlastNode["tone"]> = {
+  sessions: "accent",
+  venues: "slate",
+  equipment: "ochre",
+  people: "plum",
+  participantGroups: "moss",
+  tasks: "clay",
+};
+
 const fieldClass =
   "mt-1.5 w-full rounded-lg border border-line-strong bg-paper px-3 py-2 text-sm text-ink outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/15";
-const labelClass = "block text-xs font-medium uppercase tracking-[0.12em] text-faint";
+const labelClass = "block text-xs font-semibold uppercase tracking-[0.12em] text-faint";
 
 export default function ChangeConsole({
   graph,
@@ -145,6 +206,7 @@ export default function ChangeConsole({
       const next = data.report as ImpactReport;
       setReport(next);
       setSelected(next.followUps.map((followUp) => followUp.id));
+      document.getElementById("impact")?.scrollIntoView({ behavior: "smooth", block: "start" });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Preview failed.");
       setReport(null);
@@ -183,410 +245,575 @@ export default function ChangeConsole({
     resetPreview();
   }
 
-  const personName = (id: string) =>
-    graph.people.find((person) => person.id === id)?.name ?? id;
+  const personName = (id: string) => graph.people.find((person) => person.id === id)?.name ?? id;
   const equipmentName = (id: string) =>
     graph.equipment.find((item) => item.id === id)?.name ?? id;
 
+  const blastNodes: BlastNode[] =
+    report?.affected.map((record) => ({
+      label: record.label,
+      kind: ENTITY_KIND[record.entity] ?? entityLabel(record.entity),
+      tone: ENTITY_TONE[record.entity] ?? "slate",
+    })) ?? [];
+
+  const followUpsByRole = ROLES.map((role) => ({
+    role,
+    items: report?.followUps.filter((followUp) => followUp.ownerRole === role) ?? [],
+  })).filter((group) => group.items.length > 0);
+
   return (
-    <div className="grid gap-6 lg:grid-cols-[22rem_1fr]">
-      <Card className="self-start p-6 lg:sticky lg:top-28">
-        <SectionTitle icon={<IconRoute className="h-5 w-5" />} meta={sourceKind}>
-          Request
-        </SectionTitle>
-        <div className="mt-4">
-          <Steps
-            current={entry ? 2 : report ? 1 : 0}
-            items={["Request", "Preview", "Approve"]}
-          />
-        </div>
-
-        <div className="mt-5">
-          <span className={labelClass}>Change type</span>
-          <div className="mt-2 grid grid-cols-2 gap-1.5">
-            {CHANGE_TYPES.map((type) => (
-              <button
-                key={type}
-                onClick={() => {
-                  setChangeType(type);
-                  resetPreview();
-                }}
-                className={`rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
-                  type === changeType
-                    ? "border-accent/40 bg-accent-soft text-accent-ink"
-                    : "border-line-strong bg-paper text-muted hover:text-ink"
-                }`}
-              >
-                {CHANGE_TYPE_LABELS[type]}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <label className="mt-5 block">
-          <span className={labelClass}>Session</span>
-          <select
-            value={sessionId}
-            onChange={(event) => setSessionId(event.target.value)}
-            className={fieldClass}
+    <div className="grid gap-8 lg:grid-cols-[21rem_1fr] lg:items-start">
+      {/* ── The request ─────────────────────────────────────────────────── */}
+      <Card className="lg:sticky lg:top-24">
+        <CardBody>
+          <SectionTitle
+            icon={<IconSparkle className="h-5 w-5" />}
           >
-            {graph.sessions.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.title}
-              </option>
-            ))}
-          </select>
-        </label>
+            What changed?
+          </SectionTitle>
 
-        {changeType === "venue_change" && (
-          <label className="mt-5 block">
-            <span className={labelClass}>New venue</span>
+          <div className="mt-5 grid grid-cols-2 gap-2">
+            {CHANGE_CARDS.map(({ type, icon: Icon, blurb }) => {
+              const active = type === changeType;
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => {
+                    setChangeType(type);
+                    resetPreview();
+                  }}
+                  aria-pressed={active}
+                  className={`rounded-card border p-3 text-left transition-all ${
+                    active
+                      ? "border-accent/40 bg-accent-soft shadow-[var(--shadow-card)]"
+                      : "border-line bg-surface hover:border-accent/25 hover:bg-surface-sunk"
+                  }`}
+                >
+                  <span
+                    className={`inline-flex h-8 w-8 items-center justify-center rounded-lg border ${
+                      active
+                        ? "border-accent/25 bg-surface text-accent"
+                        : "border-line bg-paper-deep text-muted"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <span className="mt-2.5 block text-sm font-semibold text-ink">
+                    {titleCase(type)}
+                  </span>
+                  <span className="mt-0.5 block text-[0.6875rem] leading-snug text-muted">
+                    {blurb}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <label className="mt-6 block">
+            <span className={labelClass}>Which session?</span>
             <select
-              value={newVenueId}
-              onChange={(event) => {
-                setNewVenueId(event.target.value);
-                resetPreview();
-              }}
+              value={sessionId}
+              onChange={(event) => setSessionId(event.target.value)}
               className={fieldClass}
             >
-              {graph.venues.map((venue) => (
-                <option key={venue.id} value={venue.id}>
-                  {venue.name} — seats {venue.capacity}
+              {graph.sessions.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.title}
                 </option>
               ))}
             </select>
           </label>
-        )}
 
-        {changeType === "time_change" && (
-          <div className="mt-5 grid grid-cols-2 gap-3">
-            <label className="block">
-              <span className={labelClass}>New start</span>
-              <input
-                type="datetime-local"
-                value={start}
+          {changeType === "venue_change" && (
+            <label className="mt-4 block">
+              <span className={labelClass}>Move it to</span>
+              <select
+                value={newVenueId}
                 onChange={(event) => {
-                  setStart(event.target.value);
+                  setNewVenueId(event.target.value);
                   resetPreview();
                 }}
                 className={fieldClass}
-              />
+              >
+                {graph.venues.map((venue) => (
+                  <option key={venue.id} value={venue.id}>
+                    {venue.name} — {venue.capacity} seats
+                  </option>
+                ))}
+              </select>
             </label>
-            <label className="block">
-              <span className={labelClass}>New end</span>
-              <input
-                type="datetime-local"
-                value={end}
-                onChange={(event) => {
-                  setEnd(event.target.value);
-                  resetPreview();
-                }}
-                className={fieldClass}
-              />
-            </label>
+          )}
+
+          {changeType === "time_change" && (
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className={labelClass}>Starts</span>
+                <input
+                  type="datetime-local"
+                  value={start}
+                  onChange={(event) => {
+                    setStart(event.target.value);
+                    resetPreview();
+                  }}
+                  className={fieldClass}
+                />
+              </label>
+              <label className="block">
+                <span className={labelClass}>Ends</span>
+                <input
+                  type="datetime-local"
+                  value={end}
+                  onChange={(event) => {
+                    setEnd(event.target.value);
+                    resetPreview();
+                  }}
+                  className={fieldClass}
+                />
+              </label>
+            </div>
+          )}
+
+          {changeType === "resource_change" && (
+            <div className="mt-4 space-y-4">
+              <div>
+                <span className={labelClass}>Bring in</span>
+                <div className="mt-2 space-y-1.5">
+                  {graph.equipment.map((item) => (
+                    <label
+                      key={item.id}
+                      className="flex items-center gap-2.5 text-sm text-ink-soft"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={addEquipmentIds.includes(item.id)}
+                        onChange={() => toggle(addEquipmentIds, setAddEquipmentIds, item.id)}
+                        className="accent-accent"
+                      />
+                      <span>{item.name}</span>
+                      <span
+                        className={`ml-auto text-xs ${
+                          item.status === "maintenance" ? "text-clay" : "text-faint"
+                        }`}
+                      >
+                        {item.status === "maintenance" ? "in maintenance" : item.status}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <span className={labelClass}>Take out</span>
+                <div className="mt-2 space-y-1.5">
+                  {(session?.requiredEquipmentIds ?? []).map((id) => (
+                    <label
+                      key={id}
+                      className="flex items-center gap-2.5 text-sm text-ink-soft"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={removeEquipmentIds.includes(id)}
+                        onChange={() =>
+                          toggle(removeEquipmentIds, setRemoveEquipmentIds, id)
+                        }
+                        className="accent-accent"
+                      />
+                      <span>{equipmentName(id)}</span>
+                    </label>
+                  ))}
+                  {(session?.requiredEquipmentIds.length ?? 0) === 0 ? (
+                    <p className="text-xs text-faint">This session has no kit listed.</p>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {changeType === "person_change" && (
+            <div className="mt-4 space-y-4">
+              <div>
+                <span className={labelClass}>Add to the crew</span>
+                <div className="mt-2 space-y-1.5">
+                  {graph.people.map((person) => (
+                    <label
+                      key={person.id}
+                      className="flex items-center gap-2.5 text-sm text-ink-soft"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={addPersonIds.includes(person.id)}
+                        onChange={() => toggle(addPersonIds, setAddPersonIds, person.id)}
+                        className="accent-accent"
+                      />
+                      <span>{person.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <span className={labelClass}>Take off the crew</span>
+                <div className="mt-2 space-y-1.5">
+                  {(session?.assignedPersonIds ?? []).map((id) => (
+                    <label
+                      key={id}
+                      className="flex items-center gap-2.5 text-sm text-ink-soft"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={removePersonIds.includes(id)}
+                        onChange={() => toggle(removePersonIds, setRemovePersonIds, id)}
+                        className="accent-accent"
+                      />
+                      <span>{personName(id)}</span>
+                    </label>
+                  ))}
+                  {(session?.assignedPersonIds.length ?? 0) === 0 ? (
+                    <p className="text-xs text-faint">Nobody is assigned to this yet.</p>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <label className="mt-4 block">
+            <span className={labelClass}>Why? (optional)</span>
+            <textarea
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              rows={2}
+              placeholder="The speaker's train is late…"
+              className={fieldClass}
+            />
+          </label>
+
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={preview}
+              disabled={busy}
+              className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
+            >
+              {busy && !report ? "Checking…" : "Preview what this touches"}
+            </button>
           </div>
-        )}
-
-        {changeType === "resource_change" && (
-          <div className="mt-5 space-y-4">
-            <div>
-              <span className={labelClass}>Add equipment</span>
-              <div className="mt-2 space-y-1.5">
-                {graph.equipment.map((item) => (
-                  <label
-                    key={item.id}
-                    className="flex items-center gap-2.5 text-sm text-ink-soft"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={addEquipmentIds.includes(item.id)}
-                      onChange={() =>
-                        toggle(addEquipmentIds, setAddEquipmentIds, item.id)
-                      }
-                      className="accent-accent"
-                    />
-                    <span>{item.name}</span>
-                    <span className="text-xs text-faint">{item.status}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div>
-              <span className={labelClass}>Remove equipment</span>
-              <div className="mt-2 space-y-1.5">
-                {(session?.requiredEquipmentIds ?? []).map((id) => (
-                  <label
-                    key={id}
-                    className="flex items-center gap-2.5 text-sm text-ink-soft"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={removeEquipmentIds.includes(id)}
-                      onChange={() =>
-                        toggle(removeEquipmentIds, setRemoveEquipmentIds, id)
-                      }
-                      className="accent-accent"
-                    />
-                    <span>{equipmentName(id)}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {changeType === "person_change" && (
-          <div className="mt-5 space-y-4">
-            <div>
-              <span className={labelClass}>Add people</span>
-              <div className="mt-2 space-y-1.5">
-                {graph.people.map((person) => (
-                  <label
-                    key={person.id}
-                    className="flex items-center gap-2.5 text-sm text-ink-soft"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={addPersonIds.includes(person.id)}
-                      onChange={() => toggle(addPersonIds, setAddPersonIds, person.id)}
-                      className="accent-accent"
-                    />
-                    <span>{person.name}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div>
-              <span className={labelClass}>Remove people</span>
-              <div className="mt-2 space-y-1.5">
-                {(session?.assignedPersonIds ?? []).map((id) => (
-                  <label
-                    key={id}
-                    className="flex items-center gap-2.5 text-sm text-ink-soft"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={removePersonIds.includes(id)}
-                      onChange={() =>
-                        toggle(removePersonIds, setRemovePersonIds, id)
-                      }
-                      className="accent-accent"
-                    />
-                    <span>{personName(id)}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        <label className="mt-5 block">
-          <span className={labelClass}>Reason</span>
-          <textarea
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
-            rows={2}
-            placeholder="Why is this changing?"
-            className={fieldClass}
-          />
-        </label>
-
-        <label className="mt-5 block">
-          <span className={labelClass}>Approving role</span>
-          <select
-            value={approvedByRole}
-            onChange={(event) => setApprovedByRole(event.target.value as Role)}
-            className={fieldClass}
-          >
-            {ROLES.map((role) => (
-              <option key={role} value={role}>
-                {roleLabel(role)}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <div className="mt-6 flex gap-3">
-          <button
-            onClick={preview}
-            disabled={busy}
-            className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-50"
-          >
-            Preview impact
-          </button>
-          <button
-            onClick={approve}
-            disabled={busy || !report}
-            className="rounded-lg border border-line-strong bg-surface px-4 py-2 text-sm font-medium text-ink-soft transition-colors hover:border-accent/40 hover:text-ink disabled:opacity-40"
-          >
-            Approve &amp; apply
-          </button>
-        </div>
-        {!report && (
           <p className="mt-3 text-xs text-faint">
-            Preview first. Applying writes tasks and a linked change log entry.
+            Previewing writes nothing. You will see every conflict and every follow-up
+            before anything is saved.
           </p>
-        )}
+        </CardBody>
       </Card>
 
-      <div className="space-y-6">
+      {/* ── The impact ──────────────────────────────────────────────────── */}
+      <div id="impact" className="space-y-6">
         {error && (
-          <Callout title="That change could not be processed" tone="clay">
+          <Callout title="That change could not be worked out" tone="clay" icon={<IconAlert className="h-4 w-4" />}>
             {error}
           </Callout>
         )}
 
         {entry && (
-          <Callout
-            title={`${entry.id} approved and written back`}
-            tone="moss"
-            icon={<IconCheck className="h-4 w-4" />}
-          >
-            {entry.affectedRecordIds.length} records referenced ·{" "}
-            {entry.followUpTaskIds.length} follow-up tasks created. See them on the
-            dashboard and in the role briefings.
-          </Callout>
+          <Card className="border-moss/30 bg-moss-soft">
+            <CardBody>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-moss text-white">
+                  <IconCheck className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="font-display text-[1.15rem] text-ink">
+                    Saved: {entry.changeLabel}
+                  </p>
+                  <p className="mt-0.5 text-sm text-ink-soft">
+                    {count(entry.followUpTaskIds.length, "follow-up")} created and
+                    written back to{" "}
+                    {sourceKind === "notion" ? "Notion" : "the local record"}.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-3 text-sm">
+                <Link
+                  href="/roles"
+                  className="inline-flex items-center gap-1.5 font-medium text-accent hover:text-accent-hover"
+                >
+                  See who owns the work now
+                  <IconArrow className="h-4 w-4" />
+                </Link>
+                <Link
+                  href="/report"
+                  className="inline-flex items-center gap-1.5 font-medium text-accent hover:text-accent-hover"
+                >
+                  Open the report
+                  <IconArrow className="h-4 w-4" />
+                </Link>
+              </div>
+            </CardBody>
+          </Card>
         )}
 
         {!report && !error && (
-          <Card className="p-6">
-            <SectionTitle icon={<IconSparkle className="h-5 w-5" />}>
-              Impact preview
-            </SectionTitle>
-            <div className="mt-5">
-              <Empty>
-                Pick a change on the left, then preview. Nothing is written until you
-                approve.
-              </Empty>
-            </div>
+          <Card>
+            <CardBody className="py-14 text-center">
+              <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-line bg-surface-sunk text-accent">
+                <IconSparkle className="h-7 w-7" />
+              </span>
+              <p className="mt-5 font-display text-hero text-ink">
+                Nothing checked yet
+              </p>
+              <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted">
+                Choose a change on the left and preview it. You will see what it
+                reaches, what is in the way, and the follow-up work it creates — before
+                anything is written.
+              </p>
+            </CardBody>
           </Card>
         )}
 
         {report && (
           <>
-            <Card className="p-6">
-              <div className="flex flex-wrap items-center gap-2">
-                <Chip tone="accent" icon={<IconSparkle className="h-3.5 w-3.5" />}>
-                  generated
-                </Chip>
-                <span className="text-xs text-faint">{report.summary.generator}</span>
-                <span className="text-xs text-faint">
-                  · {report.summary.sourceRecordIds.length} source records linked
-                </span>
-              </div>
-              <p className="mt-4 font-display text-hero text-ink">
-                {report.changeLabel}
-              </p>
-              <p className="mt-3 text-sm leading-relaxed text-muted">
-                {report.summary.text}
-              </p>
+            <Card>
+              <CardBody>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Chip tone="accent" icon={<IconSparkle className="h-3.5 w-3.5" />}>
+                    written from the rules, not by a model
+                  </Chip>
+                  <span className="text-xs text-faint">
+                    based on {count(report.summary.sourceRecordIds.length, "record")}
+                  </span>
+                </div>
+                <h2 className="mt-4 font-display text-hero text-ink">
+                  {report.changeLabel}
+                </h2>
+                <p className="mt-3 max-w-3xl text-lead leading-relaxed text-ink-soft">
+                  {report.summary.text}
+                </p>
+              </CardBody>
             </Card>
 
-            <Card className="p-6">
-              <SectionTitle meta={`${report.affected.length} records`}>
-                Blast radius
-              </SectionTitle>
-              <ul className="mt-5 grid gap-2 sm:grid-cols-2">
-                {report.affected.map((record) => (
-                  <li
-                    key={`${record.entity}-${record.id}-${record.relation}`}
-                    className="rounded-lg border border-line bg-paper px-3 py-2.5"
-                  >
-                    <div className="text-sm text-ink">{record.label}</div>
-                    <div className="mt-0.5 text-xs text-faint">
-                      {record.entity} · {record.relation.replace(/_/g, " ")}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-
-            <Card className="p-6">
-              <SectionTitle meta={`${report.conflicts.length} found`}>
-                Conflicts
-              </SectionTitle>
-              <ul className="mt-5 space-y-2.5">
-                {report.conflicts.map((conflict) => (
-                  <li
-                    key={conflict.id}
-                    className="rounded-lg border border-line bg-paper p-4"
-                  >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Chip
-                        tone={severityTone(conflict.severity)}
-                        icon={severityIcon(conflict.severity)}
-                      >
-                        {conflict.severity}
-                      </Chip>
-                      <span className="text-xs text-faint">
-                        {titleCase(conflict.kind)}
+            <Card>
+              <CardBody>
+                <SectionTitle
+                  icon={<IconSparkle className="h-5 w-5" />}
+                  meta={count(report.affected.length, "record")}
+                >
+                  What this one change reaches
+                </SectionTitle>
+                <div className="mt-5">
+                  <BlastRadius
+                    centerLabel={graph.sessions.find((s) => s.id === sessionId)?.title ?? "Session"}
+                    centerNote="the change"
+                    nodes={blastNodes}
+                  />
+                </div>
+                <ul className="mt-6 grid gap-2 sm:grid-cols-2">
+                  {report.affected.map((record) => (
+                    <li
+                      key={`${record.entity}-${record.id}-${record.relation}`}
+                      className="flex items-start justify-between gap-3 rounded-lg border border-line bg-surface-sunk px-3.5 py-2.5"
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm text-ink">
+                          {record.label}
+                        </span>
+                        <span className="block text-xs text-faint">
+                          {relationLabel(record.relation)}
+                        </span>
                       </span>
-                    </div>
-                    <p className="mt-2 text-sm leading-relaxed text-ink-soft">
-                      {conflict.message}
-                    </p>
-                  </li>
-                ))}
-                {report.conflicts.length === 0 && (
-                  <li>
-                    <Empty>
-                      No conflicts detected by the current rules. Follow-ups are still
-                      proposed.
-                    </Empty>
-                  </li>
-                )}
-              </ul>
+                      <Chip tone={ENTITY_TONE[record.entity] ?? "neutral"}>
+                        {ENTITY_KIND[record.entity] ?? entityLabel(record.entity)}
+                      </Chip>
+                    </li>
+                  ))}
+                </ul>
+              </CardBody>
             </Card>
 
-            <Card className="p-6">
-              <SectionTitle meta={`${report.followUps.length} proposed`}>
-                Follow-ups
-              </SectionTitle>
-              <p className="mt-2 text-xs text-faint">
-                Uncheck anything you do not want written back.
-              </p>
-              <ul className="mt-5 space-y-2.5">
-                {report.followUps.map((followUp) => (
-                  <li
-                    key={followUp.id}
-                    className="flex items-start gap-3 rounded-lg border border-line bg-paper p-4"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selected.includes(followUp.id)}
-                      onChange={() => toggle(selected, setSelected, followUp.id)}
-                      className="mt-1 accent-accent"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium text-ink">
-                        {followUp.title}
-                      </div>
-                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-faint">
-                        <Chip>{roleLabel(followUp.ownerRole)}</Chip>
-                        <span>
-                          due{" "}
-                          {new Date(followUp.dueAt).toLocaleString("en-IN", {
-                            timeZone: IST,
-                          })}
+            <Card>
+              <CardBody>
+                <SectionTitle
+                  icon={<IconAlert className="h-5 w-5" />}
+                  meta={count(report.conflicts.length, "conflict")}
+                >
+                  What is in the way
+                </SectionTitle>
+                {report.conflicts.length === 0 ? (
+                  <div className="mt-5 rounded-card border border-moss/25 bg-moss-soft p-5">
+                    <p className="font-display text-[1.05rem] text-ink">
+                      The rules found no conflicts.
+                    </p>
+                    <p className="mt-1.5 text-sm text-ink-soft">
+                      The move fits. Follow-ups below are still worth sending — they are
+                      what keeps it that way.
+                    </p>
+                  </div>
+                ) : (
+                  <ul className="mt-5 space-y-3">
+                    {report.conflicts.map((conflict) => {
+                      const tone =
+                        conflict.severity === "blocking"
+                          ? "clay"
+                          : conflict.severity === "warning"
+                            ? "ochre"
+                            : "slate";
+                      return (
+                        <li
+                          key={conflict.id}
+                          className={`rounded-card border p-4 ${
+                            tone === "clay"
+                              ? "border-clay/30 bg-clay-soft"
+                              : tone === "ochre"
+                                ? "border-ochre/30 bg-ochre-soft"
+                                : "border-slate/25 bg-slate-soft"
+                          }`}
+                        >
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Chip
+                              tone={tone}
+                              icon={
+                                tone === "clay" ? (
+                                  <IconAlert className="h-3.5 w-3.5" />
+                                ) : tone === "ochre" ? (
+                                  <IconWarn className="h-3.5 w-3.5" />
+                                ) : (
+                                  <IconInfo className="h-3.5 w-3.5" />
+                                )
+                              }
+                            >
+                              {severityLabel(conflict.severity)}
+                            </Chip>
+                            {conflict.ownerRole ? (
+                              <Chip tone={toneFor(conflict.ownerRole)}>
+                                {roleLabel(conflict.ownerRole)} should fix this
+                              </Chip>
+                            ) : null}
+                          </div>
+                          <p className="mt-2.5 text-sm leading-relaxed text-ink">
+                            {conflict.message}
+                          </p>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </CardBody>
+            </Card>
+
+            <Card>
+              <CardBody>
+                <SectionTitle
+                  icon={<IconCheck className="h-5 w-5" />}
+                  meta={`${selected.length} of ${report.followUps.length} kept`}
+                >
+                  The work this creates
+                </SectionTitle>
+                <p className="mt-2 max-w-2xl text-sm text-muted">
+                  Each one already has an owner and a deadline. Untick anything you do
+                  not want written back.
+                </p>
+
+                <div className="mt-6 space-y-6">
+                  {followUpsByRole.map(({ role, items }) => (
+                    <section key={role}>
+                      <div className="flex flex-wrap items-center gap-2 border-b border-line pb-2">
+                        <Chip tone={toneFor(role)}>{roleLabel(role)}</Chip>
+                        <span className="text-xs text-faint">
+                          {count(items.length, "follow-up")}
                         </span>
                       </div>
-                      <p className="mt-2 text-xs leading-relaxed text-muted">
-                        {followUp.reason}
-                      </p>
-                      {followUp.candidatePersonIds &&
-                        followUp.candidatePersonIds.length > 0 && (
-                          <p className="mt-2 text-xs text-accent-ink">
-                            Suggested:{" "}
-                            {followUp.candidatePersonIds
-                              .map((id) => personName(id))
-                              .join(", ")}{" "}
-                            (proposed, not assigned)
-                          </p>
-                        )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
+                      <p className="mt-2 text-xs text-muted">{ROLE_BLURBS[role]}</p>
+                      <ul className="mt-3 space-y-2.5">
+                        {items.map((followUp) => {
+                          const kept = selected.includes(followUp.id);
+                          return (
+                            <li
+                              key={followUp.id}
+                              className={`flex items-start gap-3 rounded-card border p-4 transition-colors ${
+                                kept
+                                  ? "border-line bg-surface"
+                                  : "border-dashed border-line-strong bg-surface-sunk"
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={kept}
+                                onChange={() => toggle(selected, setSelected, followUp.id)}
+                                className="mt-1 accent-accent"
+                                aria-label={followUp.title}
+                              />
+                              <div className="min-w-0 flex-1">
+                                <p
+                                  className={`text-sm font-medium ${
+                                    kept ? "text-ink" : "text-muted line-through"
+                                  }`}
+                                >
+                                  {followUp.title}
+                                </p>
+                                <p className="mt-1 text-xs text-faint">
+                                  Due {formatDateTime(followUp.dueAt)}
+                                </p>
+                                <p className="mt-2 text-xs leading-relaxed text-muted">
+                                  {followUp.reason}
+                                </p>
+                                {followUp.candidatePersonIds &&
+                                followUp.candidatePersonIds.length > 0 ? (
+                                  <p className="mt-2.5 flex flex-wrap items-center gap-2 text-xs text-ink-soft">
+                                    <span className="text-faint">Could take this:</span>
+                                    {followUp.candidatePersonIds.map((id) => (
+                                      <span
+                                        key={id}
+                                        className="rounded-full border border-accent/25 bg-accent-soft px-2 py-0.5 text-accent-ink"
+                                      >
+                                        {personName(id)}
+                                      </span>
+                                    ))}
+                                    <span className="text-faint">
+                                      — a suggestion, not an assignment
+                                    </span>
+                                  </p>
+                                ) : null}
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </section>
+                  ))}
+                  {report.followUps.length === 0 ? (
+                    <p className="text-sm text-muted">
+                      The rules did not find any follow-up work for this change.
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className="mt-8 flex flex-wrap items-end gap-4 rounded-card border border-line bg-surface-sunk p-5">
+                  <label className="block min-w-[13rem]">
+                    <span className={labelClass}>Who is approving this?</span>
+                    <select
+                      value={approvedByRole}
+                      onChange={(event) => setApprovedByRole(event.target.value as Role)}
+                      className={fieldClass}
+                    >
+                      {ROLES.map((role) => (
+                        <option key={role} value={role}>
+                          {roleLabel(role)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={approve}
+                    disabled={busy || !report}
+                    className="inline-flex items-center gap-2 rounded-lg bg-ink px-5 py-2.5 text-sm font-semibold text-paper transition-colors hover:bg-ink-soft disabled:opacity-40"
+                  >
+                    <IconCheck className="h-4 w-4" />
+                    {busy ? "Saving…" : "Approve & write it back"}
+                  </button>
+                  <p className="max-w-xs text-xs text-faint">
+                    This updates the session and creates{" "}
+                    {count(selected.length, "task")} in the workspace. Everything else
+                    stays put.
+                  </p>
+                </div>
+              </CardBody>
             </Card>
           </>
         )}

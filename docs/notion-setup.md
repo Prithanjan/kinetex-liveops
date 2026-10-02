@@ -39,25 +39,54 @@ Set only:
 NOTION_TOKEN=secret_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
+Leave `NOTION_PARENT_PAGE_ID`, `NOTION_HOME_PAGE_ID`, and every `NOTION_DB_*`
+line empty. The setup script fills them all in one go.
+
+> Do not paste the token into chat. Keep it in `.env.local`, which is gitignored.
+
+### Step 2 — Put the token in `.env.local`
+
+```bash
+cp .env.example .env.local
+```
+
+Set only:
+
+```
+NOTION_TOKEN=secret_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+```
+
 Leave `NOTION_PARENT_PAGE_ID` and every `NOTION_DB_*` line empty. The setup
 script fills them all.
 
 > Do not paste the token into chat. Keep it in `.env.local`, which is gitignored.
 
-### Step 3 — Run setup, seed, and audit
+### Step 3 — Run setup, seed, present, and audit
 
 ```bash
-bun run notion:setup    # creates a top level "Kinetex LiveOps" page + 8 databases
+bun run notion:setup    # project page + 8 databases, ids in .env.local
 bun run notion:seed     # creates the demo event, sessions, equipment, tasks
+bun run notion:present  # home page + the designed database index
 bun run notion:doctor   # verify access, record counts, Domain ID integrity
 ```
 
-`notion:setup` writes the parent page id and all eight database ids into
-`.env.local`, and sets `KINETEX_SOURCE=notion`.
+`notion:setup` writes the parent page id, the home page id, and all eight
+database ids into `.env.local`, and sets `KINETEX_SOURCE=notion`.
 
----
+The design pass happens entirely in `notion:present` and can be re-run as often
+as you like — it rebuilds itself and never appends a second copy.
 
-## Verify it worked
+### Choose any of the databases to look at first
+
+Open the home page (a person working in Notion opens this first):
+
+- `🏠 Kinetex LiveOps` — the command centre: a cover, an intro, the seven-step
+  loop, the roles, and the honesty notes.
+- `📚 Event data` — the eight databases, each with an icon, a description, a
+  caption, and a per-table reading guide. Governed by four colour-coded
+  sections.
+
+### Verify it worked
 
 ```bash
 bun run dev
@@ -67,10 +96,10 @@ Then:
 
 - `http://localhost:3000/` shows the event.
 - `http://localhost:3000/change` → Preview impact → Approve & apply.
-- In Notion, the **Change Log** database now has a new row, the session's
+- In Notion, the **Change Log** database has a new row, the session's
   **Venue** relation changed, and the **Tasks** database has the new follow-ups.
 
-If all three are true, Phase 1 is real and the agent can retire the
+If all three are true, the integration is real and the agent can retire the
 "Notion adapter is a placeholder" non-claim.
 
 ---
@@ -82,9 +111,32 @@ If all three are true, Phase 1 is real and the agent can retire the
 | `scripts/notion-setup.ts` | `bun run notion:setup` | Reads `lib/data/notion/schema.ts` and creates every database with the right properties (select options, relations, date fields). Writes ids into `.env.local`. Safe to re-run: existing ids are reused. |
 | `scripts/notion-seed.ts` | `bun run notion:seed` | Creates pages from `data/seed/event-graph.json`, in dependency order so relations resolve. Idempotent: pages whose **Domain ID** already exists are skipped. |
 | `scripts/notion-reset.ts` | `bun run notion:reset` | Archives every page in the eight databases (recoverable from Notion trash). Use before re-seeding. |
+| `scripts/notion-present.ts` | `bun run notion:present` | Builds the home page and the designed database index. Re-runnable: it rebuilds its own blocks and never appends a second copy. |
 
 The database definitions come from one file, `lib/data/notion/schema.ts`. The
 reader and writer import the same file, so property names cannot drift.
+
+---
+
+## Why the design looks the way it does
+
+- Notion's public API can create pages, databases, blocks, and content — but not
+  board, gallery, calendar, or timeline *views*. Board-style layouts have to be
+  arranged by hand in the Notion UI, so the workspace stands in for them: every
+  database carries a caption, an icon, a description, and a per-table reading
+  guide instead of a generic table header.
+- Notion's API cannot recolour an option that already exists. Colours are set
+  for a fresh workspace, and for an older one `notion:setup` prints the exact
+  list of colours to paint by hand. The separate manual step is listed below.
+
+---
+
+## Manual colour step (one time)
+
+`notion:setup` prints a list of colours for your workspace. Open each database
+in Notion and paint the options by hand using the palette in
+`docs/design-system.md`. Green means free or done, yellow means planned or in
+progress, red means maintenance or blocked.
 
 ---
 

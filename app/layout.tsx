@@ -51,8 +51,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <footer className="mt-8 border-t border-line/70">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-8 text-xs text-faint">
             <span className="max-w-xl">
-              Rules decide the impact; the summary only explains it. Generated text
-              is labeled and links its source records.
+              Rules work out what a change disturbs; the written summary only explains
+              it. Nothing is saved until a person approves it.
             </span>
             <Link
               href="https://github.com/Prithanjan/kinetex-liveops"

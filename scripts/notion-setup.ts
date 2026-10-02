@@ -18,6 +18,7 @@ import {
   NOTION_SCHEMA,
   databaseSpec,
   type DatabaseKey,
+  type DatabaseSpec,
   type PropertySpec,
 } from "../lib/data/notion/schema";
 
@@ -57,6 +58,43 @@ function requireToken(): string {
   return token;
 }
 
+/**
+ * Options carry a colour. That is the difference between a bare list you have to
+ * read and a table you can scan: green is fine, red wants a person.
+ */
+function optionList(property: PropertySpec): { name: string; color?: string }[] {
+  return (property.options ?? []).map((name) => {
+    const color = property.optionColors?.[name];
+    return color ? { name, color } : { name };
+  });
+}
+
+/** Icon plus the description paragraph shown under the database title. */
+function presentationOf(spec: DatabaseSpec): Record<string, unknown> {
+  return {
+    icon: { type: "emoji", emoji: spec.icon },
+    description: [{ type: "text", text: { content: spec.description } }],
+  };
+}
+
+/**
+ * Give a database its icon and description. Never fatal: a workspace that is
+ * fully wired but slightly plain beats a setup run that stops halfway.
+ */
+async function presentDatabase(client: Client, databaseId: string, spec: DatabaseSpec) {
+  try {
+    await client.databases.update({
+      database_id: databaseId,
+      ...presentationOf(spec),
+    } as unknown as UpdateDatabaseArgs);
+  } catch (error) {
+    console.log(
+      `    ! could not set icon/description on ${spec.title}: ` +
+        `${error instanceof Error ? error.message : error}`,
+    );
+  }
+}
+
 /** Build the Notion property config for a schema property. */
 function propertyConfig(
   property: PropertySpec,
@@ -72,13 +110,9 @@ function propertyConfig(
     case "date":
       return { date: {} };
     case "select":
-      return {
-        select: { options: (property.options ?? []).map((name) => ({ name })) },
-      };
+      return { select: { options: optionList(property) } };
     case "multi_select":
-      return {
-        multi_select: { options: (property.options ?? []).map((name) => ({ name })) },
-      };
+      return { multi_select: { options: optionList(property) } };
     case "relation": {
       const target = databaseSpec(property.relatesTo!);
       const targetId = databaseIds[property.relatesTo!] ?? process.env[target.envVar];
@@ -119,6 +153,8 @@ async function resolveParentPage(
 }
 
 /** Add properties and select options declared in the schema but absent in Notion. */
+const colourHints: string[] = [];
+
 async function reconcileDatabase(
   client: Client,
   databaseId: string,
@@ -129,7 +165,11 @@ async function reconcileDatabase(
   const current = await client.databases.retrieve({ database_id: databaseId });
   const existing = current.properties as Record<
     string,
-    { type?: string; select?: { options?: { name: string }[] }; multi_select?: { options?: { name: string }[] } }
+    {
+      type?: string;
+      select?: { options?: { id?: string; name: string; color?: string }[] };
+      multi_select?: { options?: { id?: string; name: string; color?: string }[] };
+    }
   >;
 
   const additions: Record<string, unknown> = {};
@@ -144,19 +184,44 @@ async function reconcileDatabase(
     if (property.kind !== "select" && property.kind !== "multi_select") continue;
     if (!property.options) continue;
     const bucket = property.kind === "select" ? found.select : found.multi_select;
-    const present = new Set((bucket?.options ?? []).map((option) => option.name));
-    const missing = property.options.filter((option) => !present.has(option));
-    if (missing.length === 0) continue;
+    const currentOptions = bucket?.options ?? [];
+    const byName = new Map(currentOptions.map((option) => [option.name, option]));
+
+    // Add what is declared but missing. Existing options are passed through
+    // untouched, because Notion rejects any attempt to *recolour* an existing
+    // option ("Cannot update color of select with name: …"). Colours therefore
+    // land on a fresh workspace, and are noted as a manual step on an existing
+    // one. Nothing is ever removed.
+    const missing = (property.options ?? []).filter((name) => !byName.has(name));
+    if (missing.length === 0) {
+      const wantsColour = currentOptions.filter(
+        (option) =>
+          property.optionColors?.[option.name] &&
+          property.optionColors[option.name] !== option.color,
+      );
+      if (wantsColour.length > 0) {
+        colourHints.push(
+          `${spec.title} › ${property.name}: colour ${wantsColour
+            .map((option) => `${option.name} → ${property.optionColors![option.name]}`)
+            .join(", ")}`,
+        );
+      }
+      continue;
+    }
+
     additions[property.name] = {
       [property.kind]: {
         options: [
-          ...(bucket?.options ?? []).map((option) => ({ name: option.name })),
-          ...missing.map((name) => ({ name })),
+          ...currentOptions.map((option) => ({ id: option.id, name: option.name })),
+          ...missing.map((name) => {
+            const color = property.optionColors?.[name];
+            return color ? { name, color } : { name };
+          }),
         ],
       },
     };
     console.log(
-      `    + ${spec.title}.${property.name} options: ${missing.join(", ")}`,
+      `    + ${spec.title}.${property.name} options added: ${missing.join(", ")}`,
     );
   }
 
@@ -168,6 +233,23 @@ async function reconcileDatabase(
     });
   }
   return count;
+}
+
+/**
+ * A workspace created before the colours existed keeps its default grey pills:
+ * recolouring an existing option is not something the Notion API allows. Say so
+ * once, with the exact list, instead of failing the whole setup.
+ */
+function reportColourHints() {
+  if (colourHints.length === 0) return;
+  console.log(
+    "\nManual colour step (Notion's API cannot recolour an existing option):",
+  );
+  for (const hint of colourHints) console.log(`  · ${hint}`);
+  console.log(
+    "  Set these once in the Notion UI, or run notion:setup against a fresh workspace " +
+      "and the colours are applied automatically.",
+  );
 }
 
 async function main() {
@@ -188,6 +270,7 @@ async function main() {
     if (existingId) {
       databaseIds[spec.key] = existingId;
       const changes = await reconcileDatabase(client, existingId, spec.title, databaseIds);
+      await presentDatabase(client, existingId, spec);
       console.log(
         `= ${spec.title} ${changes > 0 ? `(upgraded, ${changes} change(s))` : "(up to date)"}`,
       );
@@ -208,11 +291,14 @@ async function main() {
 
     databaseIds[spec.key] = database.id;
     env = setEnvValue(env, spec.envVar, database.id);
+    await presentDatabase(client, database.id, spec);
     console.log(`+ ${spec.title} (${spec.envVar})`);
   }
 
   env = setEnvValue(env, "KINETEX_SOURCE", "notion");
   writeFileSync(ENV_PATH, env, "utf8");
+
+  reportColourHints();
 
   console.log(
     `\n${NOTION_SCHEMA.length} databases ready${upgraded > 0 ? `, ${upgraded} schema change(s) applied` : ""}. Ids written to ${ENV_PATH}.`,

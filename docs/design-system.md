@@ -22,7 +22,10 @@ What those systems do, and what we copied:
 | Dividers between sections to create rhythm | `border-b border-line` rows; dividers between Notion sections |
 | Toggles to hide detail that would clutter | Notion detail lives in a toggle block; web uses progressive detail |
 | Cover image and page icon | Notion page icon `🎪` plus a cover image |
+| One caption per database | `📚 Event data` has a caption plus a reading guide under every database |
+| One caption per database | `📚 Event data` now has a caption plus a reading guide under every database |
 | Colour-coordinated databases, not rainbow | Six muted accent hues, one per entity or role |
+| One reading guide per database | Each table's caption names the single column that carries the meaning |
 | Generous whitespace, few hard lines | 8px spacing rhythm, section gaps step by φ |
 | Nav as cards, not just links | Role picker is a grid of 5 cards with icons and counts |
 
@@ -99,7 +102,7 @@ Rules the components enforce:
 | Change console | Sticky request panel with a 3-step indicator, then generated summary, blast radius grid, severity-coded conflicts, follow-up cards with candidate proposals |
 | Role briefings | Five role cards with icons and open counts, blocker callout, task list, recent changes |
 | Report | Metric tiles, method callout, numbered lesson cards in two columns, linked source records |
-| Notion page | Icon and cover, eight icons in a consistent language, workflow list, workspace map, roles, two callouts, detail toggle |
+| Notion page | Icon and cover, eight databases with descriptions and captions in four sections, reading guides under every table, two callouts |
 
 ## 7. Non-claims
 

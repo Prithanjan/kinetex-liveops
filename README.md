@@ -1,10 +1,25 @@
-# Kinetex LiveOps  ·  v1.0.0
-
+# Kinetex LiveOps  ·  v1.1.0
 **Change-aware event command center.** One line: Kinetex LiveOps turns event records into a dependency-aware command center, so when a plan changes it shows the operational impact, proposes role-owned follow-ups, and records approved decisions back into the source of truth.
 
 One scenario runs end to end:
 
 **Plan → detect dependencies → preview impact → assign follow-ups → approve and sync → brief each role → capture lessons**
+
+## The Notion workspace (design pass)
+
+The integration is now two pages with two jobs:
+
+- **`🏠 Kinetex LiveOps`** — the page a person opens first. Cover, icon, a plain-
+  language intro, the seven steps as illustrated cards, who each role serves, and
+  an honest note about what the writing does and does not claim.
+- **`📚 Event data`** — the eight databases, each with an emoji icon, a
+  description, a caption reading like a real template, and a per-table reading
+guide that names the column that carries the meaning, grouped into four
+colour-coded sections. The change log is the audit trail; the task board is
+where each role opens its day.
+
+`notion:present` is re-runnable and rebuilds itself cleanly; there is no marker
+text left in the workspace.
 
 Four change types run through the same graph, the same rule registry, and the
 same change log: **venue**, **time**, **resource**, and **person** changes.
@@ -65,7 +80,8 @@ curl -X POST http://localhost:3000/api/reset
 
 The only input is an integration token. The scripts create a top level project
 page, all eight databases with their properties and relations, and the demo
-data.
+data. Open the resulting workspace in Notion and start at `🏠 Kinetex LiveOps` —
+`📚 Event data` holds the eight databases with their reading guides.
 
 ```bash
 cp .env.example .env.local   # set NOTION_TOKEN only
@@ -87,6 +103,8 @@ Full guide: [docs/notion-setup.md](docs/notion-setup.md).
 | `bun run build` | Production build |
 | `bun run typecheck` | `tsc --noEmit` |
 | `bun test` | Engine unit tests |
+| `bun run notion:all` | Setup + present + seed in one go (the full dashboard start) |
+| `bun run notion:all` | Setup + present + seed in one go (the full dashboard start) |
 
 ## Project layout
 
@@ -110,7 +128,7 @@ tests/               Engine, Notion mapping, and report unit tests
 ## Documentation
 
 - [**CHECKOUT.md**](CHECKOUT.md) — **how to run, tour, and verify everything**
-- [CHANGELOG.md](CHANGELOG.md) — release notes (v1.0.0)
+- [CHANGELOG.md](CHANGELOG.md) — release notes (v1.1.0)
 - [docs/design-system.md](docs/design-system.md) — palette, type, and layout rules
 - [docs/implementation-plan.md](docs/implementation-plan.md) — phased build plan
 - [docs/notion-setup.md](docs/notion-setup.md) — connect a real workspace in four steps
@@ -132,7 +150,8 @@ tests/               Engine, Notion mapping, and report unit tests
 - **The generated summary is rules-based, not an LLM call.** The `generator` field says so explicitly. No AI call is made in the current build.
 - **Role views are role-filtered interfaces, not access-controlled.** No auth or permissions are implemented.
 - **No claim of measured operational improvement.** Impact numbers are counts over the seed graph, not field metrics.
-- Webhooks are a stretch goal. Notion documents webhook support, but some page-update events can be aggregated or delayed, so this build makes no instant-sync claim.
+- **Notion can't do views.** Board, gallery, calendar, and timeline layouts are not creatable through Notion's public API, and existing select options cannot be recoloured — the reading guides in `📚 Event data` stand in for those layouts. On a fresh workspace, database options are coloured automatically.
+- **Webhooks are a stretch goal.** Notion documents webhook support, but some page-update events can be aggregated or delayed, so this build makes no instant-sync claim.
 
 ## License
 
