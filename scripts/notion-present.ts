@@ -337,7 +337,7 @@ function homeBlocks(dataPageId: string): AnyBlock[] {
       "yellow_background",
     ),
     quote(
-      "Walkthrough and verification steps live in the repository: CHECKOUT.md at github.com/Prithanjan/kinetex-liveops.",
+      "Walkthrough and verification steps are in CHECKOUT.md (kept local in the repo, no GitHub).",
     ),
   ];
 }

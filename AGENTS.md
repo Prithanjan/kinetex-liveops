@@ -8,7 +8,7 @@ A change-aware event command center built as a tracer bullet: one venue-change
 scenario running end to end through every layer (source → graph → impact engine
 → approval API → write-back → role views).
 
-Read `ORIGINAL_REQUEST.md` first, then `docs/implementation-plan.md` (the phased
+Read `docs/implementation-plan.md` (the phased
 plan and current phase), then `docs/memory/decision-log.md`, then the specific
 doc for your task.
 

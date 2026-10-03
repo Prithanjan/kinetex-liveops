@@ -18,9 +18,7 @@ about 6 minutes offline, about 10 with Notion.
 ## 1. Install and run offline (about 2 minutes)
 
 ```bash
-git clone https://github.com/Prithanjan/kinetex-liveops.git
-cd kinetex-liveops
-bun install
+The repo is already laid out in this folder — no clone needed. Run it against the local checkout:
 bun run dev
 ```
 

@@ -54,13 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               Rules work out what a change disturbs; the written summary only explains
               it. Nothing is saved until a person approves it.
             </span>
-            <Link
-              href="https://github.com/Prithanjan/kinetex-liveops"
-              className="text-muted underline decoration-line-strong underline-offset-4 transition-colors hover:text-accent"
-            >
-              github.com/Prithanjan/kinetex-liveops
-            </Link>
-          </div>
+            </div>
         </footer>
       </body>
     </html>
