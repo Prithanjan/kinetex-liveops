@@ -4,8 +4,12 @@ import type { EventGraph } from "@/lib/domain/types";
 import type { ApplyResult } from "@/lib/engine/apply";
 import type { EventSource } from "./source";
 
+import os from "node:os";
+
 const SEED_PATH = path.join(process.cwd(), "data", "seed", "event-graph.json");
-const RUNTIME_PATH = path.join(process.cwd(), "data", "runtime", "graph.json");
+const RUNTIME_PATH = process.env.VERCEL
+  ? path.join(os.tmpdir(), "kinetex-runtime", "graph.json")
+  : path.join(process.cwd(), "data", "runtime", "graph.json");
 
 async function exists(file: string): Promise<boolean> {
   try {
